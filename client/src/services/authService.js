@@ -16,8 +16,19 @@ export const userLogin = (email, password) => {
 };
 
 // User register
-export const userRegister = (username, email, password, address, phone) => {
-    return api.post('/auth/user/register', { username, email, password, address, phone });
+export const userRegister = (firstName, lastName, gender, email, phone, password, street, city, postalCode, dietaryRestrictions) => {
+    return api.post('/auth/user/register', { 
+        firstName, 
+        lastName, 
+        gender, 
+        email, 
+        phone, 
+        password, 
+        street, 
+        city, 
+        postalCode, 
+        dietaryRestrictions 
+    });
 };
 
 // Logout
@@ -33,4 +44,14 @@ export const saveToken = (token) => {
 
 export const getToken = () => {
     return localStorage.getItem('token');
+};
+
+export default {
+    adminLogin,
+    adminRegister,
+    userLogin,
+    userRegister,
+    logout,
+    saveToken,
+    getToken
 };

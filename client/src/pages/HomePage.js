@@ -1,9 +1,36 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import '../styles/HomePage.css';
+import { useNavigate } from 'react-router-dom';
+import authService from '../services/authService';
 
-const HomePage = () => { 
+const HomePage = () => {
+  const navigate = useNavigate();
+  const dropdownRef = useRef(null);
   const [showAboutModal, setShowAboutModal] = useState(false);
   const [showHowToBuyModal, setShowHowToBuyModal] = useState(false);
+  const [cartCount, setCartCount] = useState(0);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [showUserDropdown, setShowUserDropdown] = useState(false);
+
+  // Check if user is logged in on component mount
+  useEffect(() => {
+    const token = authService.getToken();
+    if (token) {
+      setIsLoggedIn(true);
+    }
+  }, []);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setShowUserDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Mock data for cakes
   const cakeOfTheWeek = {
@@ -81,11 +108,76 @@ const HomePage = () => {
       {/* Navigation */}
       <nav className="navbar">
         <div className="nav-container">
-          <div className="nav-brand">
+          <div className="nav-brand" onClick={() => navigate('/')} style={{ cursor: 'pointer' }}>
             <img src="/assets/images/logo.jpg" alt="S2UGAR Logo" className="nav-logo" />
             <span className="nav-title">S2UGAR</span>
           </div>
-          <a href="/admin" className="nav-admin-link">Admin</a>
+          
+          <div className="nav-actions">
+            <button className="nav-cart-btn" onClick={() => navigate('/order')}>
+              <span className="cart-icon">🛒</span>
+              <span className="cart-badge">{cartCount}</span>
+            </button>
+            
+            {isLoggedIn ? (
+              <div className="nav-user-menu" ref={dropdownRef}>
+                <button 
+                  className="nav-user-btn"
+                  onClick={() => setShowUserDropdown(!showUserDropdown)}
+                >
+                  👤 Account ▼
+                </button>
+                {showUserDropdown && (
+                  <div className="user-dropdown-menu">
+                    <button 
+                      className="dropdown-item"
+                      onClick={() => {
+                        navigate('/account');
+                        setShowUserDropdown(false);
+                      }}
+                    >
+                      My Profile
+                    </button>
+                    <button 
+                      className="dropdown-item"
+                      onClick={() => {
+                        navigate('/orders');
+                        setShowUserDropdown(false);
+                      }}
+                    >
+                      My Orders
+                    </button>
+                    <button 
+                      className="dropdown-item"
+                      onClick={() => {
+                        navigate('/settings');
+                        setShowUserDropdown(false);
+                      }}
+                    >
+                      Settings
+                    </button>
+                    <div className="dropdown-divider"></div>
+                    <button 
+                      className="dropdown-item logout-item"
+                      onClick={() => {
+                        authService.logout();
+                        setIsLoggedIn(false);
+                        setShowUserDropdown(false);
+                        navigate('/');
+                      }}
+                    >
+                      Logout
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="nav-auth-buttons">
+                <button className="nav-login-btn" onClick={() => navigate('/signin')}>Sign In</button>
+              </div>
+            )}
+            
+          </div>
         </div>
       </nav>
 
@@ -154,7 +246,10 @@ const HomePage = () => {
                 <h4>{cakeOfTheWeek.name}</h4>
                 <p>{cakeOfTheWeek.description}</p>
                 <div className="cake-price">${cakeOfTheWeek.price}</div>
-                <button className="order-button">Order Now</button>
+                <button className="order-button" onClick={() => {
+                  setCartCount(cartCount + 1);
+                  navigate('/order');
+                }}>Order Now</button>
               </div>
             </div>
           </div>
@@ -169,7 +264,10 @@ const HomePage = () => {
                   <div className="cake-card-content">
                     <h4>{cake.name}</h4>
                     <div className="cake-card-price">${cake.price}</div>
-                    <button className="cake-card-button">View Details</button>
+                    <button className="cake-card-button" onClick={() => {
+                      setCartCount(cartCount + 1);
+                      navigate('/order');
+                    }}>View Details</button>
                   </div>
                 </div>
               ))}

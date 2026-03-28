@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import '../styles/AdminPage.css';
+import authService from '../services/authService'; 
 
 const AdminPage = () => {
   const [signatureCake, setSignatureCake] = useState({
@@ -12,25 +13,41 @@ const AdminPage = () => {
     servings: '',
   });
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
 
   useEffect(() => {
     if (isLoggedIn) {
-      // Mock loading - no server call for now
-      setLoading(false);
+    //  connect to backend to fetch existing signature cake data if needed
+
     }
   }, [isLoggedIn]);
 
-  const handleLogin = (e) => {
+
+
+
+  const handleLogin = async (e) => {
     e.preventDefault();
-    if (password === process.env.REACT_APP_ADMIN_PASSWORD || password === 'admin123') {
-      setIsLoggedIn(true);
-      setPassword('');
+    try {
+      setLoading(true);
       setMessage('');
-    } else {
-      setMessage('Invalid password');
+      
+      const response = await authService.adminLogin(email, password);
+      
+      if (response.data.token) {
+        authService.saveToken(response.data.token);
+        setIsLoggedIn(true);
+        setEmail('');
+        setPassword('');
+        setMessage('');
+      }
+    } catch (error) {
+      setMessage(error.response?.data?.message || 'Login failed. Please try again.');
+      console.error('Login error:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -77,13 +94,20 @@ const AdminPage = () => {
           <h1>Admin Login</h1>
           <form onSubmit={handleLogin}>
             <input
+              type="email"
+              placeholder="Enter Admin Email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+            <input
               type="password"
               placeholder="Enter Admin Password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
             />
-            <button type="submit">Login</button>
+            <button type="submit" disabled={loading}>{loading ? 'Logging in...' : 'Login'}</button>
           </form>
           {message && <p className="error-message">{message}</p>}
           <a href="/" className="back-link">← Back to Home</a>
@@ -193,7 +217,10 @@ const AdminPage = () => {
 
         {message && <p className={`message ${message.includes('Error') ? 'error' : 'success'}`}>{message}</p>}
 
-        <button className="logout-btn" onClick={() => setIsLoggedIn(false)}>
+        <button className="logout-btn" onClick={() => {
+          authService.logout();
+          setIsLoggedIn(false);
+        }}>
           Logout
         </button>
       </div>

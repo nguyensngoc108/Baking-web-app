@@ -6,6 +6,7 @@ import './styles/App.css';
 import HomePage from './pages/HomePage';
 import AdminPage from './pages/AdminPage';
 import RegisterPage from './pages/RegisterPage';
+import SignInPage from './pages/SignInPage';
 
 function App() {
   return (
@@ -14,6 +15,7 @@ function App() {
         <Route path="/" element={<HomePage />} />
         <Route path="/admin" element={<AdminPage />} />
         <Route path="/register" element={<RegisterPage />} />
+        <Route path="/signin" element={<SignInPage />} />
       </Routes>
     </Router>
   );

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../styles/RegisterPage.css';
+import authService from '../services/authService';
 
 const RegisterPage = () => {
   const navigate = useNavigate();
@@ -13,7 +14,7 @@ const RegisterPage = () => {
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
-    gender: 50,
+    gender: 'prefer-not-to-say',
     email: '',
     phone: '',
     password: '',
@@ -95,17 +96,32 @@ const RegisterPage = () => {
 
     try {
       setLoading(true);
-      // Simulate API call - replace with actual backend URL
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      console.log('Registration data:', formData);
-      setMessage('Registration successful! Redirecting...');
+      setMessage('');
+
+      // Call the registration API
+      const response = await authService.userRegister(
+        formData.firstName,
+        formData.lastName,
+        formData.gender,
+        formData.email,
+        formData.phone,
+        formData.password,
+        formData.street,
+        formData.city,
+        formData.postalCode,
+        formData.dietaryRestrictions
+      );
+
+      // Save token from response
+      authService.saveToken(response.data.token);
+
+      setMessage('Registration successful! Redirecting to home...');
       
       // Reset form
       setFormData({
         firstName: '',
         lastName: '',
-        gender: 50,
+        gender: 'prefer-not-to-say',
         email: '',
         phone: '',
         password: '',
@@ -117,12 +133,13 @@ const RegisterPage = () => {
         agreeToTerms: false,
       });
 
-      // Redirect to login or home after 2 seconds
+      // Redirect to home after 2 seconds
       setTimeout(() => {
         navigate('/');
       }, 2000);
     } catch (error) {
-      setMessage('Error during registration: ' + error.message);
+      setMessage(error.response?.data?.message || 'Error during registration: ' + error.message);
+      console.error('Registration error:', error);
     } finally {
       setLoading(false);
     }
@@ -142,14 +159,11 @@ const RegisterPage = () => {
   return (
     <div className="register-page">
       {/* Navigation */}
-      <nav className="register-navbar">
-        <div className="register-nav-container">
-          <div className="register-nav-brand">
-            <span className="register-nav-title">S2UGAR</span>
-          </div>
-          <div className="register-nav-links">
-            <a href="/" className="register-nav-link">Home</a>
-            <a href="/admin" className="register-nav-link">Admin</a>
+      <nav className="navbar">
+        <div className="nav-container">
+          <div className="nav-brand" onClick={() => navigate('/')} style={{ cursor: 'pointer' }}>
+            <img src="/assets/images/logo.jpg" alt="S2UGAR Logo" className="nav-logo" />
+            <span className="nav-title">S2UGAR</span>
           </div>
         </div>
       </nav>
@@ -197,29 +211,18 @@ const RegisterPage = () => {
 
               <div className="register-form-group">
                 <label htmlFor="gender">Gender</label>
-                <div className="gender-slider-container">
-                  <span className="gender-label female-label">Female</span>
-                  <input
-                    type="range"
-                    id="gender"
-                    name="gender"
-                    min="0"
-                    max="100"
-                    value={formData.gender}
-                    onChange={handleChange}
-                    className="gender-slider"
-                  />
-                  <span className="gender-label male-label">Male</span>
-                </div>
-                <div className="gender-slider-display">
-                  {formData.gender === 0 ? (
-                    <span>100% Female</span>
-                  ) : formData.gender === 100 ? (
-                    <span>100% Male</span>
-                  ) : (
-                    <span>{100 - formData.gender}% Female / {formData.gender}% Male</span>
-                  )}
-                </div>
+                <select
+                  id="gender"
+                  name="gender"
+                  value={formData.gender}
+                  onChange={handleChange}
+                  className="gender-select"
+                >
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
+                  <option value="non-binary">Non-binary</option>
+                  <option value="prefer-not-to-say">Prefer not to say</option>
+                </select>
               </div>
 
               <div className="register-form-group">
@@ -410,7 +413,7 @@ const RegisterPage = () => {
 
             {/* Login Link */}
             <div className="register-footer">
-              <p>Already have an account? <a href="#login" className="login-link">Login here</a></p>
+              <p>Already have an account? <button className="login-link" onClick={() => navigate('/signin')}>Login here</button></p>
             </div>
           </form>
         </div>

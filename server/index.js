@@ -8,6 +8,7 @@ import cakeRoutes from './routes/cakes.js';
 import orderRoutes from './routes/orders.js';
 import adminRoutes from './routes/admin.js';
 import authRoutes from './routes/auth.js';
+import userRoutes from './routes/user.js';
 
 dotenv.config();
 
@@ -38,6 +39,7 @@ app.use('/api/cakes', cakeRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/user', userRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
