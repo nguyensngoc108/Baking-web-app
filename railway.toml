@@ -1,0 +1,26 @@
+# Railway Configuration for Baking App
+# Defines services, build, and deployment settings
+
+[build]
+# Build settings for all services
+builder = "dockerfile"
+
+[[services]]
+name = "server"
+serviceName = "Baking API Server"
+
+[services.build]
+dockerfile = "server/Dockerfile"
+context = "."
+
+[[services]]
+name = "client"
+serviceName = "Baking Web App"
+
+[services.build]
+dockerfile = "client/Dockerfile"
+context = "."
+
+# Plugins (optional - Railway can auto-detect)
+[[plugins]]
+source = "https://github.com/railwayapp/railway-templates/blob/main/plugins/mongo.json"
