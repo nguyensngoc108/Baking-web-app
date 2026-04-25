@@ -1,4 +1,4 @@
-# Baking Shop - Cake Sales Website
+# S2UGAR - Cake Sales Website
 
 A full-stack web application for selling homemade cakes online with admin management and email notifications.
 
