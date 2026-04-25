@@ -1,14 +1,8 @@
 import axios from 'axios';
 
-// In production on Railway, REACT_APP_SERVER_URL is empty (use relative URLs)
-// Nginx will proxy /api requests to the backend server
-// In local dev, use REACT_APP_SERVER_URL=http://localhost:5000 or fallback to localhost
-const API_URL = process.env.REACT_APP_SERVER_URL || 'http://localhost:5000';
-const baseURL = API_URL && API_URL !== '' ? `${API_URL}/api` : '/api';
-
-// Create axios instance
+// Use relative URLs - same service handles both frontend and API
 const api = axios.create({
-    baseURL: baseURL,
+    baseURL: '/api',
     headers: {
         'Content-Type': 'application/json',
     },

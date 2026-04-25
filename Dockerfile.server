@@ -1,21 +1,40 @@
-# Server Dockerfile at root level for Railway
-FROM node:20-alpine AS builder
+# Build React frontend
+FROM node:20-alpine AS client-builder
 
-WORKDIR /app
+WORKDIR /app/client
+
+COPY client/package*.json ./
+
+RUN npm install
+
+COPY client/ .
+
+RUN npm run build
+
+# Build Node.js server
+FROM node:20-alpine AS server-builder
+
+WORKDIR /app/server
 
 COPY server/package*.json ./
 
 RUN npm install --omit=dev
 
+# Final stage - Server serving both API and React frontend
 FROM node:20-alpine
 
 WORKDIR /app
 
 RUN apk add --no-cache dumb-init
 
-COPY --from=builder /app/node_modules ./node_modules
+# Copy server dependencies
+COPY --from=server-builder /app/server/node_modules ./node_modules
 
+# Copy server code
 COPY server/ .
+
+# Copy React build to public folder for Express to serve
+COPY --from=client-builder /app/client/build ./public
 
 RUN addgroup -g 1001 -S nodejs && adduser -S nodejs -u 1001
 USER nodejs

@@ -46,6 +46,14 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'Server is running' });
 });
 
+// Serve React static files from public folder
+app.use(express.static('public'));
+
+// SPA routing - serve index.html for non-API routes
+app.get('*', (req, res) => {
+  res.sendFile(process.cwd() + '/public/index.html');
+});
+
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on port ${PORT}`);
