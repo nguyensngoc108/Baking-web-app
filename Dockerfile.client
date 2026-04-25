@@ -10,7 +10,7 @@ RUN npm install
 COPY client/ .
 
 # Build arguments for environment variables
-ARG REACT_APP_SERVER_URL=http://localhost:5000
+ARG REACT_APP_SERVER_URL
 ENV REACT_APP_SERVER_URL=$REACT_APP_SERVER_URL
 
 # Build the React application
