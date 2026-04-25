@@ -3,11 +3,11 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-COPY package*.json ./
+COPY client/package*.json ./
 
 RUN npm install
 
-COPY . .
+COPY client/ .
 
 # Build the React application
 RUN npm run build
@@ -19,7 +19,7 @@ FROM nginx:alpine
 COPY --from=builder /app/build /usr/share/nginx/html
 
 # Copy Nginx configuration
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY client/nginx.conf /etc/nginx/conf.d/default.conf
 
 # Expose port
 EXPOSE 3000

@@ -1,6 +1,3 @@
-# Railway Configuration for Baking App
-# Railway auto-detects services from Dockerfiles in subdirectories
-
-[build]
-dockerfilePath = "server/Dockerfile"
-buildContext = "."
+# Railway auto-detects Dockerfiles in subdirectories
+# server/Dockerfile → Server service
+# client/Dockerfile → Client service

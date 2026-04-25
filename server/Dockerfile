@@ -3,11 +3,11 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Copy package files
-COPY package*.json ./
+# Copy package files from server directory
+COPY server/package*.json ./
 
 # Install dependencies
-RUN npm install --only=production
+RUN npm install --omit=dev
 
 # Final stage
 FROM node:20-alpine
@@ -20,8 +20,8 @@ RUN apk add --no-cache dumb-init
 # Copy built node_modules from builder stage
 COPY --from=builder /app/node_modules ./node_modules
 
-# Copy application code
-COPY . .
+# Copy application code from server directory
+COPY server/ .
 
 # Create non-root user for security
 RUN addgroup -g 1001 -S nodejs && adduser -S nodejs -u 1001
