@@ -1,0 +1,23 @@
+{
+  "$schema": "https://railway.app/schema.json",
+  "services": {
+    "client": {
+      "build": {
+        "dockerfile": "Dockerfile.client"
+      },
+      "deploy": {
+        "port": 3000,
+        "restartPolicyMaxRetries": 10
+      }
+    },
+    "server": {
+      "build": {
+        "dockerfile": "Dockerfile.server"
+      },
+      "deploy": {
+        "port": 5000,
+        "restartPolicyMaxRetries": 10
+      }
+    }
+  }
+}
