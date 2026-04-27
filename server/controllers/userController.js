@@ -3,7 +3,7 @@ import User from '../models/User.js';
 
 export const getUserProfile = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id
+    const user = await User.findById(req.user._id
         .select('-password'));
     if (!user) return res.status(404).json({ message: 'User not found' });
     res.json(user);
@@ -15,7 +15,7 @@ export const getUserProfile = async (req, res) => {
 
 export const updateUserProfile = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id
+    const user = await User.findById(req.user._id
         .select('-password'));
     if (!user) return res.status(404).json({ message: 'User not found' });
 
@@ -37,7 +37,7 @@ export const updateUserProfile = async (req, res) => {
 
 export const updateUserPassword = async (req, res) => {
     try {
-        const user = await User.findById(req.user.id);
+        const user = await User.findById(req.user._id);
         if (!user) return res.status(404).json({ message: 'User not found' });
 
         const { currentPassword, newPassword } = req.body;

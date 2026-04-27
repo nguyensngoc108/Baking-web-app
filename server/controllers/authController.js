@@ -42,7 +42,6 @@ export const login = async (req, res) => {
       token,
       admin: {
         id: admin._id,
-        username: admin.username,
         email: admin.email,
       },
     });
@@ -268,3 +267,5 @@ export const resetPassword = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+

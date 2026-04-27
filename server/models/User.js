@@ -39,7 +39,13 @@ const userSchema = new mongoose.Schema({
     type: String,
   },
   details: {
-    type: String,
+    allergies: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'CakeIngredient'
+    }],
+    notes:{
+      type: String,
+    }
   },
   createdAt: {
     type: Date,

@@ -9,6 +9,7 @@ import orderRoutes from './routes/orders.js';
 import adminRoutes from './routes/admin.js';
 import authRoutes from './routes/auth.js';
 import userRoutes from './routes/user.js';
+import cartRoutes from './routes/carts.js';
 
 dotenv.config();
 
