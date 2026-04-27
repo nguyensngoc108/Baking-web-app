@@ -1,21 +1,72 @@
 import Order from '../models/Order.js';
-
-// Create order (public)
+import OrderItem from '../models/OrderItem.js';
+import Cake from '../models/Cake.js';
+// Create order from cart (public) with order items
 export const createOrder = async (req, res) => {
-  try {
-    console.log('Creating order:', req.body);
-    const order = new Order(req.body);
-    const savedOrder = await order.save();
-    res.status(201).json(savedOrder);
-  } catch (error) {
-    res.status(400).json({ message: error.message });
-  }
-};
+    try {
+        const { address, items, deliveryDate, note } = req.body
+        const userId = req.user._id
+        
+        const cakeIds = items.map(item => item.cakeId)
+        const cakes = await Cake.find({ _id: { $in: cakeIds } })
 
-// Get all orders (Admin only)
+        // map cake prices from DB
+        const orderItemsData = items.map(item => {
+            const cake = cakes.find(c => c._id.toString() === item.cakeId)
+            if (!cake) throw new Error(`Cake not found: ${item.cakeId}`)
+            if (!cake.available) throw new Error(`Cake not available: ${cake.name}`)
+            
+            return {
+                cakeId: item.cakeId,
+                name: cake.name,          
+                price: cake.price,         
+                quantity: item.quantity,
+                note: item.note
+            }
+        })
+
+        // calculate total from DB prices, not client
+        const totalPrice = orderItemsData.reduce((sum, item) => {
+            return sum + (item.price * item.quantity)
+        }, 0)
+
+        const orderItems = await OrderItem.insertMany(
+            orderItemsData.map(item => ({ ...item, orderId: null }))
+        )
+
+        const order = new Order({
+            userId,
+            address,
+            items: orderItems.map(item => item._id),
+            totalPrice,
+            deliveryDate,
+            note
+        })
+
+        await order.save()
+
+        await OrderItem.updateMany(
+            { _id: { $in: orderItems.map(item => item._id) } },
+            { orderId: order._id }
+        )
+
+
+        await Cart.findOneAndDelete({ user: userId })
+
+        res.status(201).json(
+          { message: 'Order created successfully', data: order }
+        )
+
+    } catch (error) {
+        console.error('Error creating order:', error)
+        res.status(400).json({ message: error.message })
+    }
+}
+    
+
 export const getAllOrders = async (req, res) => {
   try {
-    const orders = await Order.find();
+    const orders = await Order.find().populate('items');
     res.json(orders);
   } catch (error) {
     res.status(500).json({ message: error.message });

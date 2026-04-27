@@ -26,7 +26,29 @@ const cakeSchema = new mongoose.Schema({
     type: Boolean,
     default: true,
   },
-  ingredients: [String],
+  ingredients: [{
+    ingredientId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'CakeIngredient',
+      required: true
+    },
+    totalCost: {
+      type: Number,
+      required: true
+    },
+    measure: {
+      type: String,
+      required: true
+    },
+    each: {
+      type: Number,
+      required: true
+    },
+    totalEach: {
+      type: Number,
+      required: true
+    }
+  }],
   servings: Number,
   isSignature: {
     type: Boolean,
@@ -35,6 +57,10 @@ const cakeSchema = new mongoose.Schema({
   createdAt: {
     type: Date,
     default: Date.now,
+  },
+  deleted: {
+    type: Boolean,
+    default: false,
   },
 });
 
