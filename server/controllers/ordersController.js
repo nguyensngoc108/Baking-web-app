@@ -1,48 +1,126 @@
 import Order from '../models/Order.js';
 import OrderItem from '../models/OrderItem.js';
 import Cake from '../models/Cake.js';
-// Create order from cart (public) with order items
+import PackagingOption from '../models/PackagingOption.js';
+import Cart from '../models/Cart.js';
+import User from '../models/User.js';
+
+// Create order from cart (public) with order items - supports both logged-in and guest users
 export const createOrder = async (req, res) => {
     try {
-        const { address, items, deliveryDate, note } = req.body
-        const userId = req.user._id
+        const { address: bodyAddress, items, deliveryDate, note, guestEmail, guestPhone } = req.body
+        const userId = req.user ? req.user._id : null
+        
+        let orderAddress, orderEmail, orderPhone
+        
+        if (userId) {
+            // Logged-in user: fetch data from User schema
+            const user = await User.findById(userId)
+            if (!user) {
+                return res.status(404).json({ message: 'User not found' })
+            }
+            
+            // Check if user has required fields
+            if (!user.address) {
+                return res.status(400).json({ 
+                    message: 'Please update your address in your profile before placing an order' 
+                })
+            }
+            if (!user.email) {
+                return res.status(400).json({ 
+                    message: 'Email is missing from your profile' 
+                })
+            }
+            if (!user.phone) {
+                return res.status(400).json({ 
+                    message: 'Please add your phone number to your profile before placing an order' 
+                })
+            }
+            
+            orderAddress = user.address
+            orderEmail = user.email
+            orderPhone = user.phone
+        } else {
+            // Guest user: require email and phone from request
+            if (!guestEmail || !guestPhone) {
+                return res.status(400).json({ 
+                    message: 'For guest checkout, email and phone are required' 
+                })
+            }
+            if (!bodyAddress) {
+                return res.status(400).json({ 
+                    message: 'Address is required for checkout' 
+                })
+            }
+            
+            orderAddress = bodyAddress
+            orderEmail = guestEmail
+            orderPhone = guestPhone
+        }
         
         const cakeIds = items.map(item => item.cakeId)
         const cakes = await Cake.find({ _id: { $in: cakeIds } })
 
-        // map cake prices from DB
-        const orderItemsData = items.map(item => {
-            const cake = cakes.find(c => c._id.toString() === item.cakeId)
-            if (!cake) throw new Error(`Cake not found: ${item.cakeId}`)
-            if (!cake.available) throw new Error(`Cake not available: ${cake.name}`)
-            
-            return {
-                cakeId: item.cakeId,
-                name: cake.name,          
-                price: cake.price,         
-                quantity: item.quantity,
-                note: item.note
-            }
-        })
-
-        // calculate total from DB prices, not client
-        const totalPrice = orderItemsData.reduce((sum, item) => {
-            return sum + (item.price * item.quantity)
-        }, 0)
+        // map cake prices from DB and handle packaging options
+        let totalPrice = 0
+        const orderItemsData = await Promise.all(
+            items.map(async (item) => {
+                const cake = cakes.find(c => c._id.toString() === item.cakeId)
+                if (!cake) throw new Error(`Cake not found: ${item.cakeId}`)
+                if (!cake.available) throw new Error(`Cake not available: ${cake.name}`)
+                
+                let packagingPrice = 0
+                let packagingOptionId = null
+                
+                // Validate packaging option if provided
+                if (item.packagingOptionId) {
+                    const packagingOption = await PackagingOption.findById(item.packagingOptionId)
+                    if (!packagingOption) {
+                        throw new Error(`Packaging option not found: ${item.packagingOptionId}`)
+                    }
+                    if (!packagingOption.isActive) {
+                        throw new Error(`Packaging option is not available: ${packagingOption.name}`)
+                    }
+                    packagingPrice = packagingOption.price
+                    packagingOptionId = packagingOption._id
+                }
+                
+                const itemTotal = (cake.price * item.quantity) + (packagingPrice * item.quantity)
+                totalPrice += itemTotal
+                
+                return {
+                    cakeId: item.cakeId,
+                    name: cake.name,          
+                    price: cake.price,         
+                    quantity: item.quantity,
+                    packagingOptionId,
+                    packagingPrice,
+                    note: item.note
+                }
+            })
+        )
 
         const orderItems = await OrderItem.insertMany(
             orderItemsData.map(item => ({ ...item, orderId: null }))
         )
 
-        const order = new Order({
-            userId,
-            address,
+        const orderData = {
+            address: orderAddress,
             items: orderItems.map(item => item._id),
             totalPrice,
             deliveryDate,
             note
-        })
+        }
+        
+        // Add user info or guest info
+        if (userId) {
+            orderData.userId = userId
+        } else {
+            orderData.guestEmail = orderEmail
+            orderData.guestPhone = orderPhone
+        }
 
+        const order = new Order(orderData)
         await order.save()
 
         await OrderItem.updateMany(
@@ -50,8 +128,10 @@ export const createOrder = async (req, res) => {
             { orderId: order._id }
         )
 
-
-        await Cart.findOneAndDelete({ user: userId })
+        // Delete cart for logged-in users
+        if (userId) {
+            await Cart.findOneAndDelete({ user: userId })
+        }
 
         res.status(201).json(
           { message: 'Order created successfully', data: order }

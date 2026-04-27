@@ -1,8 +1,13 @@
 import axios from 'axios';
 
-// Use relative URLs - same service handles both frontend and API
+// Development: use REACT_APP_SERVER_URL (localhost:5000)
+// Production: use relative /api (production domain)
+const baseURL = process.env.NODE_ENV === 'development' && process.env.REACT_APP_SERVER_URL
+    ? `${process.env.REACT_APP_SERVER_URL}/api`
+    : '/api';
+
 const api = axios.create({
-    baseURL: '/api',
+    baseURL,
     headers: {
         'Content-Type': 'application/json',
     },

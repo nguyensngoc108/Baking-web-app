@@ -4,7 +4,15 @@ const orderSchema = new mongoose.Schema({
   userId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: true,
+    required: false,
+  },
+  guestEmail: {
+    type: String,
+    required: false,
+  },
+  guestPhone: {
+    type: String,
+    required: false,
   },
   address: {
     type: String,

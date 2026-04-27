@@ -23,6 +23,15 @@ const OrderItemSchema = new mongoose.Schema({
         type: Number,
         required: true,
     },
+    packagingOptionId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'PackagingOption',
+        default: null,
+    },
+    packagingPrice: {
+        type: Number,
+        default: 0,
+    },
     note:{
         type: String,
     }
