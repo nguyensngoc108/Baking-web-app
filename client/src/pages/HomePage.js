@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import '../styles/HomePage.css';
 import { useNavigate } from 'react-router-dom';
 import authService from '../services/authService';
+import api from '../services/httpServices';
 
 const HomePage = () => {
   const navigate = useNavigate();
@@ -11,13 +12,74 @@ const HomePage = () => {
   const [cartCount, setCartCount] = useState(0);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [showUserDropdown, setShowUserDropdown] = useState(false);
+  const [userName, setUserName] = useState('user');
+  const [categories, setCategories] = useState([
+    'Birthday_Cakes', 'Wedding_Cakes', 'Anniversary_Cakes', 'Graduation_Cakes', 'Custom_Cakes', 'Seasonal_Cakes'
+  ]);
 
   // Check if user is logged in on component mount
   useEffect(() => {
     const token = authService.getToken();
     if (token) {
       setIsLoggedIn(true);
+      // Fetch user profile data
+      api.get('/user/profile')
+        .then((response) => {
+          const { firstName, lastName } = response.data;
+          if (firstName && lastName) {
+            setUserName(`${firstName} ${lastName}`);
+          } else if (firstName) {
+            setUserName(firstName);
+          }
+        })
+        .catch((error) => {
+          console.error('Failed to fetch user profile:', error);
+          setUserName('user');
+        });
     }
+  }, []);
+
+  // Scroll animation setup - with responsive trigger points
+  useEffect(() => {
+    // Adjust rootMargin based on screen size for responsive animations
+    const rootMargin = window.innerHeight < 768 ? '0px 0px -30%' : '0px 0px -10%';
+    
+    const observerOptions = {
+      threshold: 0.05,
+      rootMargin: rootMargin
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry, index) => {
+        if (entry.isIntersecting) {
+          // Add slight delay for staggered animation effect
+          setTimeout(() => {
+            entry.target.classList.add('scroll-fade-in');
+          }, index * 100); // 100ms delay between sections
+          observer.unobserve(entry.target);
+        }
+      });
+    }, observerOptions);
+
+    // Observe all main-section elements
+    const sections = document.querySelectorAll('.main-section');
+    sections.forEach((section) => {
+      observer.observe(section);
+    });
+
+    // Handle window resize for responsive observer
+    const handleResize = () => {
+      // Update observer on resize if needed
+    };
+    
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      sections.forEach((section) => {
+        observer.unobserve(section);
+      });
+      window.removeEventListener('resize', handleResize);
+    };
   }, []);
 
   // Close dropdown when clicking outside
@@ -33,31 +95,27 @@ const HomePage = () => {
   }, []);
 
   // Mock data for cakes
-  const cakeOfTheWeek = {
-    name: 'Strawberry Dream Cake',
-    description: 'Light and fluffy vanilla sponge layered with fresh strawberries and cream',
-    price: 32.99,
-    image: 'https://images.unsplash.com/photo-1565958011703-44f9829ba187?w=400&h=400&fit=crop',
-  };
-
-  const birthdayCakes = [
+  const signatureCakes = [
     {
       id: 1,
-      name: 'Rainbow Celebration',
-      price: 45.99,
-      image: 'https://images.unsplash.com/photo-1558636508-e0db3814bd1d?w=300&h=300&fit=crop',
+      name: 'Strawberry Dream',
+      price: 32.99,
+      image: 'https://images.unsplash.com/photo-1565958011703-44f9829ba187?w=400&h=400&fit=crop',
+      description: 'Light vanilla sponge with fresh strawberries and cream'
     },
     {
       id: 2,
-      name: 'Chocolate Fantasy',
-      price: 42.99,
-      image: 'https://images.unsplash.com/photo-1606313564200-e75d5e30476c?w=300&h=300&fit=crop',
+      name: 'Chocolate Symphony',
+      price: 35.99,
+      image: 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=400&h=400&fit=crop',
+      description: 'Rich dark chocolate layers with ganache'
     },
     {
       id: 3,
-      name: 'Unicorn Magic',
-      price: 48.99,
-      image: 'https://images.unsplash.com/photo-1588195538326-c5b1e5b39f15?w=300&h=300&fit=crop',
+      name: 'Vanilla Bliss',
+      price: 29.99,
+      image: 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=400&h=400&fit=crop',
+      description: 'Classic vanilla cake with buttercream frosting'
     },
   ];
 
@@ -80,28 +138,17 @@ const HomePage = () => {
       feedback: 'Delicious and made with love. Will order again!',
       rating: 5,
     },
+    {
+      id: 4,
+      name: 'Michael T.',
+      feedback: 'Exceptional service and even better cakes. Worth every penny!',
+      rating: 5,
+    },
   ];
 
-  const cakeGallery = [
-    {
-      id: 1,
-      image: 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=300&h=300&fit=crop',
-      customer: 'Wedding Celebration',
-      comment: 'A stunning 3-tier chocolate masterpiece',
-    },
-    {
-      id: 2,
-      image: 'https://images.unsplash.com/photo-1464349095431-e9a21285b5f3?w=300&h=300&fit=crop',
-      customer: 'Anniversary Special',
-      comment: 'Elegant vanilla cake with fresh roses',
-    },
-    {
-      id: 3,
-      image: 'https://images.unsplash.com/photo-1567306226416-28f0efdc88ce?w=300&h=300&fit=crop',
-      customer: 'Baby Shower',
-      comment: 'Adorable pastel-themed cake',
-    },
-  ];
+  const handleCategoryClick = (category) => {
+    navigate(`/menu/${category.toLowerCase()}`);
+  };
 
   return (
     <div className="home-page">
@@ -111,6 +158,17 @@ const HomePage = () => {
           <div className="nav-brand" onClick={() => navigate('/')} style={{ cursor: 'pointer' }}>
             <img src="/assets/images/logo.jpg" alt="S2UGAR Logo" className="nav-logo" />
             <span className="nav-title">S2UGAR</span>
+          </div>
+          
+          <div className="nav-menu">
+            <a href="#home" onClick={(e) => { e.preventDefault(); navigate('/'); }}>Home</a>
+            <a href="#menu" onClick={(e) => { e.preventDefault(); navigate('/menu'); }}>Products</a>
+            <button onClick={() => setShowAboutModal(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-dark)', fontSize: '0.95rem', fontWeight: 500 }}>
+              Our Story
+            </button>
+            <button onClick={() => setShowHowToBuyModal(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-dark)', fontSize: '0.95rem', fontWeight: 500 }}>
+              Contact
+            </button>
           </div>
           
           <div className="nav-actions">
@@ -125,7 +183,7 @@ const HomePage = () => {
                   className="nav-user-btn"
                   onClick={() => setShowUserDropdown(!showUserDropdown)}
                 >
-                  👤 Account ▼
+                  Hello, {userName} ▼
                 </button>
                 {showUserDropdown && (
                   <div className="user-dropdown-menu">
@@ -181,141 +239,111 @@ const HomePage = () => {
         </div>
       </nav>
 
-      {/* Hero Banner */}
-      <section className="hero-banner">
-        <div className="hero-content">
-          <h1 className="hero-title">Welcome to S2UGAR</h1>
-          <p className="hero-subtitle">Handcrafted cakes made with love, one slice at a time</p>
+      {/* SECTION 1: Intro Section */}
+      <section className="main-section" style={{ background: 'linear-gradient(135deg, var(--primary-light) 0%, var(--accent-color) 100%)', padding: 'clamp(60px, 10vh, 100px) 0' }}>
+        <div className="container">
+          <div className="hero-content" style={{ textAlign: 'center' }}>
+            <h1 className="hero-title" style={{ color: 'var(--text-dark)', marginBottom: '20px' }}>Handcrafted Cakes Made with Love</h1>
+            <p className="hero-subtitle" style={{ fontSize: 'clamp(1.1rem, 3vw, 1.4rem)', marginBottom: '30px' }}>
+              One slice at a time, we bring joy to every celebration
+            </p>
+            <button 
+              onClick={() => navigate('/menu')}
+              style={{
+                background: 'var(--white)',
+                color: 'var(--primary-color)',
+                border: 'none',
+                padding: '15px 40px',
+                borderRadius: '30px',
+                fontSize: '1.1rem',
+                fontWeight: '600',
+                cursor: 'pointer',
+                transition: 'all 0.3s ease'
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.transform = 'translateY(-3px)';
+                e.target.style.boxShadow = '0 8px 20px rgba(218, 171, 181, 0.3)';
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.transform = 'translateY(0)';
+                e.target.style.boxShadow = 'none';
+              }}
+            >
+              Explore Menu →
+            </button>
+          </div>
         </div>
       </section>
 
-      {/* SECTION 1: Our Sweet Corner */}
-      <section className="main-section section-sweet-corner">
+      {/* SECTION 2: Categories Section */}
+      <section className="main-section" style={{ background: 'var(--white)', padding: 'clamp(50px, 8vh, 80px) 0' }}>
         <div className="container">
-          <h2 className="section-title">Our Sweet Corner</h2>
-          <div className="two-column-grid">
-            {/* About the Baker */}
-            <div className="feature-card" onClick={() => setShowAboutModal(true)}>
-              <div className="card-icon">🍰</div>
-              <h3>About the Baker</h3>
-              <p>Discover our story, passion, and commitment to creating the perfect cake for you</p>
-              <button className="card-button">Learn More →</button>
-            </div>
-
-            {/* Cake Studio */}
-            <div className="feature-card">
-              <div className="card-icon">✨</div>
-              <h3>Cake Studio</h3>
-              <p>Browse our gallery of custom cakes and customer celebrations</p>
-              <button className="card-button">View Gallery →</button>
-            </div>
-          </div>
-
-          {/* Cake Gallery Preview */}
-          <div className="gallery-preview">
-            <h3 className="subsection-title">Recent Creations</h3>
-            <div className="gallery-grid">
-              {cakeGallery.map((item) => (
-                <div key={item.id} className="gallery-item">
-                  <img src={item.image} alt={item.customer} />
-                  <div className="gallery-overlay">
-                    <h4>{item.customer}</h4>
-                    <p>{item.comment}</p>
-                  </div>
+          <h2 className="section-title">Explore Our Categories</h2>
+          <div className="categories-grid">
+            {categories.map((category, index) => {
+              const categoryName = category.replace(/_/g, ' ');
+              const categoryPath = categoryName.split(' ')[0].toLowerCase();
+              return (
+                <div 
+                  key={index}
+                  className="category-item"
+                  onClick={() => navigate(`/menu/${categoryPath}`)}
+                  title={categoryName}
+                >
+                  {category}
                 </div>
-              ))}
-            </div>
+              );
+            })}
           </div>
         </div>
       </section>
 
-      {/* SECTION 2: Your Sweet Choice */}
-      <section className="main-section section-sweet-choice">
+      {/* SECTION 3: Customers Love Section */}
+      <section className="main-section" style={{ background: 'var(--cream)', padding: 'clamp(50px, 8vh, 80px) 0' }}>
         <div className="container">
-          <h2 className="section-title">Your Sweet Choice</h2>
-          
-          {/* Cake of the Week */}
-          <div className="featured-cake">
-            <h3 className="subsection-title">Cake of the Week</h3>
-            <div className="cake-showcase">
-              <div className="cake-image-container">
-                <img src={cakeOfTheWeek.image} alt={cakeOfTheWeek.name} />
-                <span className="badge-special">Special</span>
-              </div>
-              <div className="cake-details">
-                <h4>{cakeOfTheWeek.name}</h4>
-                <p>{cakeOfTheWeek.description}</p>
-                <div className="cake-price">${cakeOfTheWeek.price}</div>
-                <button className="order-button" onClick={() => {
-                  setCartCount(cartCount + 1);
-                  navigate('/order');
-                }}>Order Now</button>
-              </div>
-            </div>
-          </div>
-
-          {/* Birthday Cakes */}
-          <div className="category-section">
-            <h3 className="subsection-title">Birthday Cakes</h3>
-            <div className="cakes-grid">
-              {birthdayCakes.map((cake) => (
-                <div key={cake.id} className="cake-card">
-                  <img src={cake.image} alt={cake.name} />
-                  <div className="cake-card-content">
+          <h2 className="section-title">Customers Love</h2>
+          <p style={{ textAlign: 'center', fontSize: 'clamp(1rem, 2.5vw, 1.1rem)', color: 'var(--text-light)', marginBottom: 'clamp(30px, 5vh, 40px)' }}>
+            Our signature cakes that keep customers coming back
+          </p>
+          <div className="cakes-grid">
+            {signatureCakes.map((cake) => (
+              <div key={cake.id} className="cake-card">
+                <img src={cake.image} alt={cake.name} />
+                <div className="cake-card-content">
+                  <div>
                     <h4>{cake.name}</h4>
+                    <p style={{ color: 'var(--text-light)', fontSize: '0.9rem', marginBottom: '10px' }}>{cake.description}</p>
+                  </div>
+                  <div className="cake-card-bottom">
                     <div className="cake-card-price">${cake.price}</div>
                     <button className="cake-card-button" onClick={() => {
                       setCartCount(cartCount + 1);
                       navigate('/order');
-                    }}>View Details</button>
+                    }} title="Add to Cart">
+                      🛒
+                    </button>
                   </div>
                 </div>
-              ))}
-            </div>
-            <div className="view-all-container">
-              <button className="view-all-button">View All Birthday Cakes →</button>
-            </div>
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* SECTION 3: Customer Corner */}
-      <section className="main-section section-customer-corner">
+      {/* SECTION 4: Reviews Section */}
+      <section className="main-section" style={{ background: 'var(--accent-color)', padding: 'clamp(50px, 8vh, 80px) 0' }}>
         <div className="container">
-          <h2 className="section-title">Customer Corner</h2>
-          
-          <div className="two-column-grid">
-            {/* How to Buy */}
-            <div className="info-card" onClick={() => setShowHowToBuyModal(true)}>
-              <div className="info-icon">�</div>
-              <h3>How to Buy</h3>
-              <p>Step-by-step guide to ordering your perfect cake</p>
-              <button className="info-button">Read Guide →</button>
-            </div>
-
-            {/* Small Feedback */}
-            <div className="info-card">
-              <div className="info-icon">⭐</div>
-              <h3>Customer Reviews</h3>
-              <p>See what our happy customers are saying</p>
-              <button className="info-button">Read Reviews →</button>
-            </div>
-          </div>
-
-          {/* Feedback Preview */}
-          <div className="feedback-preview">
-            <h3 className="subsection-title">What Our Customers Say</h3>
-            <div className="feedback-grid">
-              {customerFeedbacks.map((feedback) => (
-                <div key={feedback.id} className="feedback-card">
-                  <div className="stars">
-                    {'⭐'.repeat(feedback.rating)}
-                  </div>
-                  <p className="feedback-text">"{feedback.feedback}"</p>
-                  <p className="feedback-author">- {feedback.name}</p>
+          <h2 className="section-title">What Our Customers Say</h2>
+          <div className="feedback-grid">
+            {customerFeedbacks.map((feedback) => (
+              <div key={feedback.id} className="feedback-card">
+                <div className="stars">
+                  {'⭐'.repeat(feedback.rating)}
                 </div>
-              ))}
-            </div>
+                <p className="feedback-text">"{feedback.feedback}"</p>
+                <p className="feedback-author">- {feedback.name}</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
@@ -325,12 +353,12 @@ const HomePage = () => {
         <div className="container">
           <div className="footer-content">
             <div className="footer-section">
-              <h4>Our Sweet Corner</h4>
-              <p>Baking happiness since 2020</p>
+              <h4>S2UGAR</h4>
+              <p>Handcrafted cakes made with love and passion</p>
             </div>
             <div className="footer-section">
               <h4>Contact</h4>
-              <p>Email: hello@oursweetcorner.com</p>
+              <p>Email: hello@s2ugar.com</p>
               <p>Phone: (555) 123-4567</p>
             </div>
             <div className="footer-section">
@@ -338,9 +366,13 @@ const HomePage = () => {
               <p>Mon-Sat: 9am - 6pm</p>
               <p>Sunday: Closed</p>
             </div>
+            <div className="footer-section">
+              <h4>Follow Us</h4>
+              <p>Instagram | Facebook | Twitter</p>
+            </div>
           </div>
           <div className="footer-bottom">
-            <p>&copy; 2025 S2UGAR. All rights reserved.</p>
+            <p>&copy; 2025 S2UGAR. All rights reserved. | Crafted with 💕</p>
           </div>
         </div>
       </footer>
@@ -350,7 +382,7 @@ const HomePage = () => {
         <div className="modal-overlay" onClick={() => setShowAboutModal(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <button className="close-btn" onClick={() => setShowAboutModal(false)}>×</button>
-            <h2>About the Baker</h2>
+            <h2>About S2UGAR</h2>
             <div className="modal-body">
               <p>
                 Welcome to S2UGAR! We are a passionate team of bakers dedicated to creating 
@@ -378,7 +410,7 @@ const HomePage = () => {
         </div>
       )}
 
-      {/* How to Buy Modal */}
+      {/* Contact/How to Buy Modal */}
       {showHowToBuyModal && (
         <div className="modal-overlay" onClick={() => setShowHowToBuyModal(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
@@ -396,22 +428,22 @@ const HomePage = () => {
                 <div className="step">
                   <div className="step-number">2</div>
                   <div className="step-content">
-                    <h3>Contact Us</h3>
-                    <p>Reach out via email or phone with your cake choice and any customization requests.</p>
+                    <h3>Select Your Cake</h3>
+                    <p>Choose flavors, size, packaging, and any customizations you'd like.</p>
                   </div>
                 </div>
                 <div className="step">
                   <div className="step-number">3</div>
                   <div className="step-content">
-                    <h3>Confirm Details</h3>
-                    <p>We'll discuss flavors, size, design details, and delivery/pickup date.</p>
+                    <h3>Add to Cart</h3>
+                    <p>Add your cake to cart and proceed to checkout.</p>
                   </div>
                 </div>
                 <div className="step">
                   <div className="step-number">4</div>
                   <div className="step-content">
                     <h3>Place Your Order</h3>
-                    <p>Finalize your order with a deposit. We'll send you a confirmation email.</p>
+                    <p>Complete payment and provide delivery/pickup preferences.</p>
                   </div>
                 </div>
                 <div className="step">
@@ -423,7 +455,7 @@ const HomePage = () => {
                 </div>
               </div>
               <div className="contact-info-box">
-                <h3>Ready to Order?</h3>
+                <h3>Questions? Get in Touch!</h3>
                 <p>📧 Email: hello@s2ugar.com</p>
                 <p>📞 Phone: (555) 123-4567</p>
                 <p>⏰ Orders require 48 hours notice</p>

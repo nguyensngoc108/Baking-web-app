@@ -15,40 +15,15 @@ const cakeSchema = new mongoose.Schema({
   },
   image: {
     type: String,
-    required: true,
   },
   category: {
     type: String,
     enum: ['Chocolate', 'Vanilla', 'Fruit', 'Special'],
-    required: true,
   },
   available: {
     type: Boolean,
     default: true,
   },
-  ingredients: [{
-    ingredientId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'CakeIngredient',
-      required: true
-    },
-    totalCost: {
-      type: Number,
-      required: true
-    },
-    measure: {
-      type: String,
-      required: true
-    },
-    each: {
-      type: Number,
-      required: true
-    },
-    totalEach: {
-      type: Number,
-      required: true
-    }
-  }],
   servings: Number,
   isSignature: {
     type: Boolean,

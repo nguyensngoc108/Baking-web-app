@@ -12,16 +12,16 @@ import { verifyAdmin } from '../middleware/authMiddleware.js';
 const router = express.Router();
 
 // POST /api/cart (Add to cart)
-router.post('/', verifyAdmin, addToCart);
+router.post('/', addToCart);
 
 // GET /api/cart/:userId (Get cart)
-router.get('/:userId', verifyAdmin, getCart);
+router.get('/:userId', getCart);
 
 // PUT /api/cart/:userId/:cakeId (Update cart item)
-router.put('/:userId/:cakeId', verifyAdmin, updateCartItem);
+router.put('/:userId/:cakeId', updateCartItem);
 
 // DELETE /api/cart/:userId/:cakeId (Remove from cart)
-router.delete('/:userId/:cakeId', verifyAdmin, removeFromCart);
+router.delete('/:userId/:cakeId', removeFromCart);
 
 export default router;
 
