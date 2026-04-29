@@ -15,6 +15,11 @@ export const userLogin = (email, password) => {
     return api.post('/auth/user/login', { email, password });
 };
 
+export const getAdminCakesAndIngredients = () => {
+    return api.get('/admin/recipe-ingredients');
+}
+
+
 // User register
 export const userRegister = (firstName, lastName, gender, email, phone, password, street, city, postalCode, dietaryRestrictions) => {
     return api.post('/auth/user/register', { 

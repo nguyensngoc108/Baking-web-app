@@ -1,15 +1,15 @@
 /* CSS Variables from root (ensure consistency) */
 :root {
-  --primary-color: #DAABB5;
-  --primary-dark: #c48f9d;
-  --primary-light: #f0d9de;
-  --accent-color: #F4E4E7;
-  --text-dark: #333;
-  --text-light: #666;
+  --primary-color: #2563eb;
+  --primary-dark: #1e40af;
+  --primary-light: #eff6ff;
+  --accent-color: #f0f9ff;
+  --text-dark: #111827;
+  --text-light: #6b7280;
   --white: #fff;
-  --cream: #faf8f6;
-  --shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-  --shadow-hover: 0 8px 25px rgba(0, 0, 0, 0.15);
+  --cream: #f0f9ff;
+  --shadow: 0 4px 15px rgba(37, 99, 235, 0.1);
+  --shadow-hover: 0 8px 25px rgba(37, 99, 235, 0.15);
 }
 
 /* Register Page Container */
@@ -269,7 +269,7 @@
   transition: all 0.3s ease;
   box-sizing: border-box;
   appearance: none;
-  background-image: url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23c48f9d%22 stroke-width=%222%22%3e%3cpolyline points=%226 9 12 15 18 9%22%3e%3c/polyline%3e%3c/svg%3e');
+  background-image: url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%232563eb%22 stroke-width=%222%22%3e%3cpolyline points=%226 9 12 15 18 9%22%3e%3c/polyline%3e%3c/svg%3e');
   background-repeat: no-repeat;
   background-position: right clamp(0.75rem, 2%, 1rem) center;
   background-size: 1.25rem;

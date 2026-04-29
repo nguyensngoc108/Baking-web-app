@@ -11,6 +11,11 @@ const SignInPage = () => {
   const [message, setMessage] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+  const [loginType, setLoginType] = useState('user'); // 'user' or 'admin'
+
+  const handleAdminLoginClick = () => {
+    navigate('/dashboard-login');
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -24,8 +29,10 @@ const SignInPage = () => {
       setLoading(true);
       setMessage('');
 
-      // Call the login API
-      const response = await authService.userLogin(email, password);
+      // Call the appropriate login API
+      const response = loginType === 'admin' 
+        ? await authService.adminLogin(email, password)
+        : await authService.userLogin(email, password);
       
       // Save token
       authService.saveToken(response.data.token);
@@ -65,8 +72,8 @@ const SignInPage = () => {
       <div className="signin-container">
         <div className="signin-form-wrapper">
           <div className="signin-header">
-            <h1>Welcome Back</h1>
-            <p>Sign in to your account</p>
+            <h1>{loginType === 'admin' ? 'Admin Login' : 'Welcome Back'}</h1>
+            <p>{loginType === 'admin' ? 'Sign in to admin panel' : 'Sign in to your account'}</p>
           </div>
 
           <form onSubmit={handleSubmit} className="signin-form">
@@ -138,6 +145,7 @@ const SignInPage = () => {
             {/* Sign Up Link */}
             <div className="signin-footer">
               <p>Don't have an account? <a href="/register" className="signup-link">Create one</a></p>
+              <p style={{ marginTop: '10px', fontSize: '0.9rem' }}>Admin? <button type="button" onClick={handleAdminLoginClick} style={{ background: 'none', border: 'none', color: 'var(--primary-color)', cursor: 'pointer', fontWeight: '600', textDecoration: 'underline' }}>Login here</button></p>
             </div>
           </form>
 
