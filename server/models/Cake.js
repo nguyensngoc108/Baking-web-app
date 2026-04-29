@@ -16,6 +16,9 @@ const cakeSchema = new mongoose.Schema({
   image: {
     type: String,
   },
+  cloudinary_id: {
+    type: String,
+  },
   category: {
     type: String,
     enum: ['Chocolate', 'Vanilla', 'Fruit', 'Special'],

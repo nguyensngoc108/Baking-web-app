@@ -8,7 +8,9 @@ import {
   addIngredient,
   deleteIngredient,
   getIngredients,
-  getCakesAndIngredients,
+  getRecipeIngredients,
+  updateRecipeIngredients,
+  removeRecipeIngredient,
   createPackagingOption,
   getPackagingOptions,
   updatePackagingOption,
@@ -18,9 +20,13 @@ import { verifyAdmin } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
-router.get('/cakes-ingredients', verifyAdmin, getCakesAndIngredients);
+router.get('/recipe-ingredients', verifyAdmin, getRecipeIngredients);
 
 router.get('/ingredients', verifyAdmin, getIngredients);
+
+router.put('/recipe-ingredients', verifyAdmin, updateRecipeIngredients);
+
+router.delete('/recipe-ingredients', verifyAdmin, removeRecipeIngredient);
 // POST /api/admin/signature (Admin only)
 router.post('/signature', verifyAdmin, createSignatureCake);
 

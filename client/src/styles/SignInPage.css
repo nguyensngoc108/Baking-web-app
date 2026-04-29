@@ -1,14 +1,14 @@
 /* Sign In Page Styles */
 :root {
-  --primary-color: #DAABB5;
-  --primary-dark: #c48f9d;
-  --primary-light: #f0d9de;
-  --accent-color: #F4E4E7;
-  --text-dark: #4a3c42;
-  --text-light: #6d5d63;
+  --primary-color: #2563eb;
+  --primary-dark: #1e40af;
+  --primary-light: #eff6ff;
+  --accent-color: #f0f9ff;
+  --text-dark: #111827;
+  --text-light: #6b7280;
   --white: #ffffff;
-  --cream: #FFF8F5;
-  --shadow: rgba(218, 171, 181, 0.2);
+  --cream: #f0f9ff;
+  --shadow: rgba(37, 99, 235, 0.1);
 }
 
 * {
@@ -187,6 +187,15 @@
   font-size: clamp(0.95rem, 2.5vw, 1.1rem);
   color: var(--text-light);
   margin: 0;
+}
+
+/* Login Type Selector - Hidden, using small link instead */
+.login-type-selector {
+  display: none;
+}
+
+.login-type-btn {
+  display: none;
 }
 
 /* Form Groups */

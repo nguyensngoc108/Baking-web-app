@@ -4,7 +4,8 @@ import './styles/App.css';
 
 // Pages
 import HomePage from './pages/HomePage';
-import AdminPage from './pages/AdminPage';
+import DashboardPage from './pages/Dashboard';
+import DashboardLogin from './pages/DashboardLogin';
 import RegisterPage from './pages/RegisterPage';
 import SignInPage from './pages/SignInPage';
 
@@ -13,9 +14,10 @@ function App() {
     <Router>
       <Routes>
         <Route path="/" element={<HomePage />} />
-        <Route path="/admin" element={<AdminPage />} />
-        <Route path="/register" element={<RegisterPage />} />
         <Route path="/signin" element={<SignInPage />} />
+        <Route path="/dashboard-login" element={<DashboardLogin />} />
+        <Route path="/admin" element={<DashboardPage />} />
+        <Route path="/register" element={<RegisterPage />} />
       </Routes>
     </Router>
   );
