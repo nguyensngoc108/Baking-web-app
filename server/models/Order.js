@@ -1,25 +1,27 @@
 import mongoose from 'mongoose';
 
 const orderSchema = new mongoose.Schema({
-  customerName: {
-    type: String,
-    required: true,
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: false,
   },
-  customerEmail: {
+  guestEmail: {
     type: String,
-    required: true,
+    required: false,
   },
-  customerPhone: {
+  guestPhone: {
+    type: String,
+    required: false,
+  },
+  address: {
     type: String,
     required: true,
   },
   items: [
-    {
-      cakeId: mongoose.Schema.Types.ObjectId,
-      name: String,
-      quantity: Number,
-      price: Number,
-    },
+    { type: mongoose.Schema.Types.ObjectId, 
+      ref: 'OrderItem' 
+    }
   ],
   totalPrice: {
     type: Number,
@@ -29,7 +31,9 @@ const orderSchema = new mongoose.Schema({
     type: Date,
     required: true,
   },
-  specialRequests: String,
+  note:{
+    type: String,
+  },
   status: {
     type: String,
     enum: ['Pending', 'Confirmed', 'Preparing', 'Ready', 'Delivered'],
@@ -39,6 +43,6 @@ const orderSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
-});
+}, {timestamps: true});
 
 export default mongoose.model('Order', orderSchema);

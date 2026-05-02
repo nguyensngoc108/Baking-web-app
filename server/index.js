@@ -9,6 +9,8 @@ import orderRoutes from './routes/orders.js';
 import adminRoutes from './routes/admin.js';
 import authRoutes from './routes/auth.js';
 import userRoutes from './routes/user.js';
+import cartRoutes from './routes/carts.js';
+import imageRoutes from './routes/images.js';
 
 dotenv.config();
 
@@ -40,6 +42,7 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
+app.use('/api/images', imageRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
