@@ -35,70 +35,23 @@ A full-stack web application for selling homemade cakes online with admin manage
 ## Free Hosting Options
 
 ### Backend
-- **Render** - Free tier for Node.js apps (https://render.com)
-- **Railway** - Free tier available (https://railway.app)
-- **Fly.io** - Free credits (https://fly.io)
+- **Render** - 
+- **Railway** -
+- **Fly.io** -
 
 ### Frontend
-- **Vercel** - Optimized for React (https://vercel.com)
-- **Netlify** - Simple React deployment (https://netlify.com)
-- **GitHub Pages** - Static hosting (https://pages.github.com)
+- **GitHub Pages** -
 
 ### Database
-- **MongoDB Atlas** - Free tier 512MB (https://www.mongodb.com/cloud/atlas)
+- **MongoDB Atlas** -
 
 ### Email Service
-- **Gmail** - Free with app passwords
-- **SendGrid** - 100 emails/day free (https://sendgrid.com)
+- **Gmail** - 
+- **SendGrid** -
 
 ### Image Hosting
-- **Cloudinary** - Free tier with 25GB storage (https://cloudinary.com)
+- **Cloudinary** -
 
-## Project Structure
-
-```
-Baking project/
-├── server/
-│   ├── config/
-│   │   └── db.js
-│   ├── controllers/
-│   ├── models/
-│   │   ├── Cake.js
-│   │   ├── Order.js
-│   │   └── Admin.js
-│   ├── routes/
-│   │   ├── cakes.js
-│   │   ├── orders.js
-│   │   ├── admin.js
-│   │   └── auth.js
-│   ├── middleware/
-│   ├── utils/
-│   │   └── emailService.js
-│   ├── index.js
-│   ├── package.json
-│   ├── .env.example
-│   └── .gitignore
-│
-└── client/
-    ├── public/
-    │   └── index.html
-    ├── src/
-    │   ├── components/
-    │   ├── pages/
-    │   │   ├── HomePage.js
-    │   │   ├── OrderPage.js
-    │   │   └── AdminPage.js
-    │   ├── hooks/
-    │   ├── context/
-    │   ├── utils/
-    │   ├── styles/
-    │   │   ├── index.css
-    │   │   └── App.css
-    │   ├── App.js
-    │   ├── index.js
-    │   └── package.json
-    └── .gitignore
-```
 
 ## Setup Instructions
 
@@ -158,6 +111,4 @@ Baking project/
 
 See `.env.example` in the server folder for required environment variables.
 
-## License
 
-This project is free to use for personal projects.
