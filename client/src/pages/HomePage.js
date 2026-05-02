@@ -368,7 +368,9 @@ const HomePage = () => {
             </div>
             <div className="footer-section">
               <h4>Follow Us</h4>
-              <p>Instagram | Facebook | Twitter</p>
+              <a href="https://www.instagram.com/s2ugarr" target="_blank" rel="noopener noreferrer" className="social-link">
+                Instagram
+              </a>
             </div>
           </div>
           <div className="footer-bottom">

@@ -2,15 +2,15 @@
 
 /* Color Theme */
 :root {
-  --primary-color: #2563eb;
-  --primary-dark: #1e40af;
-  --primary-light: #eff6ff;
-  --accent-color: #f0f9ff;
+  --primary-color: #9b5e6e;
+  --primary-dark: #7a3d4d;
+  --primary-light: #fce8ec;
+  --accent-color: #c9a0ab;
   --text-dark: #111827;
   --text-light: #6b7280;
   --white: #ffffff;
-  --cream: #f0f9ff;
-  --shadow: rgba(37, 99, 235, 0.1);
+  --cream: #DAABB5;
+  --shadow: rgba(218, 171, 181, 0.2);
 }
 
 * {

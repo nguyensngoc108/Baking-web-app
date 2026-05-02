@@ -9,12 +9,22 @@ import DashboardIngredients from './DashboardIngredients';
 import DashboardOrders from './DashboardOrders';
 import DashboardPackaging from './DashboardPackaging';
 
-const DashboardPage = () => {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [activeTab, setActiveTab] = useState('overview');
-  const dashboardData = useDashboardData();
+const NAV = [
+  { key: 'overview',     label: 'Overview',    icon: '📊' },
+  { key: 'products',     label: 'Products',    icon: '🍰' },
+  { key: 'ingredients',  label: 'Ingredients', icon: '🥘' },
+  { key: 'packaging',    label: 'Packaging',   icon: '📦' },
+  { key: 'orders',       label: 'Orders',      icon: '📋' },
+];
 
-  // Login Check
+const formatDate = () =>
+  new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+
+const DashboardPage = () => {
+  const [isLoggedIn, setIsLoggedIn]   = useState(false);
+  const [activeTab, setActiveTab]     = useState('overview');
+  const dashboardData                  = useDashboardData();
+
   useEffect(() => {
     const token = authService.getToken();
     if (token) {
@@ -29,6 +39,7 @@ const DashboardPage = () => {
   };
 
   const handleLogout = () => {
+    authService.logout();
     setIsLoggedIn(false);
     dashboardData.setMessage('');
   };
@@ -37,119 +48,125 @@ const DashboardPage = () => {
     return <DashboardLogin onLoginSuccess={handleLoginSuccess} />;
   }
 
+  const activeNav = NAV.find(n => n.key === activeTab);
+
   return (
     <div className="dashboard-container">
-      {/* Sidebar */}
+
+      {/* ── Sidebar ── */}
       <aside className="dashboard-sidebar">
-        <div className="dashboard-logo">
-          <h2>S2UGAR Admin</h2>
+        <div className="sidebar-brand">
+          <div className="sidebar-brand-mark">
+            <div className="sidebar-brand-icon">🍰</div>
+            <div>
+              <div className="sidebar-brand-name">S2UGAR</div>
+              <div className="sidebar-brand-sub">Admin Panel</div>
+            </div>
+          </div>
         </div>
+
         <nav className="dashboard-nav">
-          <button
-            className={`nav-item ${activeTab === 'overview' ? 'active' : ''}`}
-            onClick={() => setActiveTab('overview')}
-          >
-            📊 Overview
-          </button>
-          <button
-            className={`nav-item ${activeTab === 'products' ? 'active' : ''}`}
-            onClick={() => setActiveTab('products')}
-          >
-            🍰 Products
-          </button>
-          <button
-            className={`nav-item ${activeTab === 'ingredients' ? 'active' : ''}`}
-            onClick={() => setActiveTab('ingredients')}
-          >
-            🥘 Ingredients
-          </button>
-          <button
-            className={`nav-item ${activeTab === 'packaging' ? 'active' : ''}`}
-            onClick={() => setActiveTab('packaging')}
-          >
-            📮 Packaging
-          </button>
-          <button
-            className={`nav-item ${activeTab === 'orders' ? 'active' : ''}`}
-            onClick={() => setActiveTab('orders')}
-          >
-            📦 Orders
-          </button>
+          <div className="nav-section-label">Menu</div>
+          {NAV.map(({ key, label, icon }) => (
+            <button
+              key={key}
+              className={`nav-item ${activeTab === key ? 'active' : ''}`}
+              onClick={() => setActiveTab(key)}
+            >
+              <span className="nav-icon">{icon}</span>
+              {label}
+            </button>
+          ))}
         </nav>
-        <button
-          className="dashboard-logout-btn"
-          onClick={() => {
-            authService.logout();
-            handleLogout();
-          }}
-        >
-          🚪 Logout
-        </button>
+
+        <div className="sidebar-footer">
+          <div className="sidebar-admin-row">
+            <div className="sidebar-admin-avatar">A</div>
+            <div>
+              <div className="sidebar-admin-name">Administrator</div>
+              <div className="sidebar-admin-role">Admin Account</div>
+            </div>
+          </div>
+          <button className="dashboard-logout-btn" onClick={handleLogout}>
+            🚪 Sign out
+          </button>
+        </div>
       </aside>
 
-      {/* Main Content */}
+      {/* ── Main ── */}
       <main className="dashboard-main">
-        <div className="dashboard-header">
-          <h1>Dashboard</h1>
-          <a href="/" className="dashboard-home-link">← Home</a>
+
+        {/* Top bar */}
+        <div className="dashboard-topbar">
+          <div className="topbar-left">
+            <div className="topbar-page-title">
+              {activeNav?.icon} {activeNav?.label}
+            </div>
+            <div className="topbar-breadcrumb">Dashboard › {activeNav?.label}</div>
+          </div>
+          <div className="topbar-right">
+            <span className="topbar-date">{formatDate()}</span>
+            <div className="topbar-divider" />
+            <a href="/" className="topbar-site-btn">View Site →</a>
+          </div>
         </div>
 
-        {dashboardData.message && (
-          <div className={`dashboard-message ${dashboardData.message.includes('Error') ? 'error' : 'success'}`}>
-            {dashboardData.message}
-          </div>
-        )}
+        {/* Content */}
+        <div className="dashboard-content">
+          {dashboardData.message && (
+            <div className={`dashboard-message ${dashboardData.message.toLowerCase().includes('error') ? 'error' : 'success'}`}>
+              {dashboardData.message}
+            </div>
+          )}
 
-        {/* Overview Tab */}
-        {activeTab === 'overview' && (
-          <DashboardOverview stats={dashboardData.stats} />
-        )}
+          {activeTab === 'overview' && (
+            <DashboardOverview
+              stats={dashboardData.stats}
+              orders={dashboardData.orders}
+              products={dashboardData.products}
+            />
+          )}
 
-        {/* Products Tab */}
-        {activeTab === 'products' && (
-          <DashboardProducts 
-            products={dashboardData.products}
-            availableIngredients={dashboardData.availableIngredients}
-            loading={dashboardData.loading}
-            message={dashboardData.message}
-            onMessage={dashboardData.setMessage}
-            onDataChange={dashboardData.fetchDashboardData}
-          />
-        )}
+          {activeTab === 'products' && (
+            <DashboardProducts
+              products={dashboardData.products}
+              availableIngredients={dashboardData.availableIngredients}
+              loading={dashboardData.loading}
+              message={dashboardData.message}
+              onMessage={dashboardData.setMessage}
+              onDataChange={dashboardData.fetchDashboardData}
+            />
+          )}
 
-        {/* Ingredients Tab */}
-        {activeTab === 'ingredients' && (
-          <DashboardIngredients
-            ingredients={dashboardData.availableIngredients}
-            products={dashboardData.products}
-            loading={dashboardData.loading}
-            message={dashboardData.message}
-            onMessage={dashboardData.setMessage}
-            onDataChange={dashboardData.fetchDashboardData}
-          />
-        )}
+          {activeTab === 'ingredients' && (
+            <DashboardIngredients
+              ingredients={dashboardData.availableIngredients}
+              loading={dashboardData.loading}
+              onMessage={dashboardData.setMessage}
+              onDataChange={dashboardData.fetchDashboardData}
+            />
+          )}
 
-        {/* Packaging Tab */}
-        {activeTab === 'packaging' && (
-          <DashboardPackaging 
-            packagingOptions={dashboardData.packagingOptions}
-            loading={dashboardData.loading}
-            message={dashboardData.message}
-            onMessage={dashboardData.setMessage}
-            onDataChange={dashboardData.fetchDashboardData}
-          />
-        )}
+          {activeTab === 'packaging' && (
+            <DashboardPackaging
+              packagingOptions={dashboardData.packagingOptions}
+              loading={dashboardData.loading}
+              message={dashboardData.message}
+              onMessage={dashboardData.setMessage}
+              onDataChange={dashboardData.fetchDashboardData}
+            />
+          )}
 
-        {/* Orders Tab */}
-        {activeTab === 'orders' && (
-          <DashboardOrders 
-            orders={dashboardData.orders}
-            loading={dashboardData.loading}
-            message={dashboardData.message}
-            onMessage={dashboardData.setMessage}
-            onDataChange={dashboardData.fetchDashboardData}
-          />
-        )}
+          {activeTab === 'orders' && (
+            <DashboardOrders
+              orders={dashboardData.orders}
+              loading={dashboardData.loading}
+              message={dashboardData.message}
+              onMessage={dashboardData.setMessage}
+              onDataChange={dashboardData.fetchDashboardData}
+            />
+          )}
+        </div>
       </main>
     </div>
   );
