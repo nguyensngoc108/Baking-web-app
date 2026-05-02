@@ -156,20 +156,13 @@ const DashboardPackaging = ({ packagingOptions, loading, message, onMessage, onD
       )}
 
       {/* Search Bar */}
-      <div style={{ marginBottom: '20px' }}>
+      <div className="table-toolbar" style={{ borderRadius: 'var(--r-lg)', marginBottom: 16 }}>
         <input
           type="text"
-          placeholder="🔍 Search packaging..."
+          className="table-search"
+          placeholder="Search packaging…"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          style={{
-            width: '100%',
-            padding: '10px 15px',
-            border: '2px solid #e0e7ff',
-            borderRadius: '8px',
-            fontSize: '0.95rem',
-            transition: 'all 0.3s ease'
-          }}
         />
       </div>
 
@@ -241,35 +234,23 @@ const DashboardPackaging = ({ packagingOptions, loading, message, onMessage, onD
         )}
       </div>
 
-      {/* Summary Cards */}
-      <div style={{
-        marginTop: '20px',
-        padding: '15px 20px',
-        backgroundColor: '#f0f9ff',
-        border: '1px solid #e0e7ff',
-        borderRadius: '8px',
-        display: 'grid',
-        gridTemplateColumns: '1fr 1fr 1fr',
-        gap: '20px',
-        textAlign: 'center'
-      }}>
-        <div>
-          <p style={{ margin: '0 0 5px 0', color: '#6b7280', fontSize: '0.9rem' }}>Total Options</p>
-          <p style={{ margin: 0, fontSize: '1.8rem', fontWeight: '700', color: '#2563eb' }}>
-            {packagingOptions.length}
-          </p>
+      {/* Summary strip */}
+      <div className="summary-strip summary-strip-3">
+        <div className="summary-item">
+          <div className="summary-item-value">{packagingOptions.length}</div>
+          <div className="summary-item-label">Total Options</div>
         </div>
-        <div>
-          <p style={{ margin: '0 0 5px 0', color: '#6b7280', fontSize: '0.9rem' }}>Active</p>
-          <p style={{ margin: 0, fontSize: '1.8rem', fontWeight: '700', color: '#10b981' }}>
-            {packagingOptions.filter(p => p.isActive).length}
-          </p>
+        <div className="summary-item">
+          <div className="summary-item-value">{packagingOptions.filter(p => p.isActive).length}</div>
+          <div className="summary-item-label">Active</div>
         </div>
-        <div>
-          <p style={{ margin: '0 0 5px 0', color: '#6b7280', fontSize: '0.9rem' }}>Avg Cost</p>
-          <p style={{ margin: 0, fontSize: '1.8rem', fontWeight: '700', color: '#2563eb' }}>
-            ${packagingOptions.length > 0 ? (packagingOptions.reduce((sum, p) => sum + parseFloat(p.price), 0) / packagingOptions.length).toFixed(2) : '0.00'}
-          </p>
+        <div className="summary-item">
+          <div className="summary-item-value">
+            ${packagingOptions.length > 0
+              ? (packagingOptions.reduce((s, p) => s + parseFloat(p.price), 0) / packagingOptions.length).toFixed(2)
+              : '0.00'}
+          </div>
+          <div className="summary-item-label">Avg Cost</div>
         </div>
       </div>
     </div>

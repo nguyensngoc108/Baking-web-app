@@ -3,6 +3,7 @@ import RecipeIngredient from "../models/RecipeIngredient.js";
 import CakeIngredient from "../models/CakeIngredient.js";
 import Admin from "../models/Admin.js";
 import PackagingOption from "../models/PackagingOption.js";
+import Category from "../models/Category.js";
 import { uploadImage, deleteImage } from "../utils/imageService.js";
 
 export const getRecipeIngredients = async (req, res) => {
@@ -598,6 +599,80 @@ export const deletePackagingOption = async (req, res) => {
     }
 
     res.json({ message: "Packaging option deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// ── Category Management ──────────────────────────────────────────────────────
+
+const toSlug = (name) =>
+  name.trim().toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+
+export const createCategory = async (req, res) => {
+  try {
+    const { name, description, color } = req.body;
+    if (!name) return res.status(400).json({ message: "Name is required" });
+
+    const slug = toSlug(name);
+    const existing = await Category.findOne({ slug });
+    if (existing) return res.status(400).json({ message: "Category already exists" });
+
+    const category = new Category({
+      name: name.trim(),
+      slug,
+      description: description || '',
+      color: color || '#6366f1',
+    });
+    const saved = await category.save();
+    res.status(201).json(saved);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+export const getCategories = async (req, res) => {
+  try {
+    const categories = await Category.find().sort({ name: 1 });
+    res.json(categories);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const updateCategory = async (req, res) => {
+  try {
+    const { name, description, color } = req.body;
+    const updateData = {};
+
+    if (name) {
+      const newSlug = toSlug(name);
+      const conflict = await Category.findOne({ slug: newSlug, _id: { $ne: req.params.id } });
+      if (conflict) return res.status(400).json({ message: "Category name already exists" });
+
+      const old = await Category.findById(req.params.id);
+      if (old && old.slug !== newSlug) {
+        await Cake.updateMany({ category: old.slug }, { category: newSlug });
+      }
+      updateData.name = name.trim();
+      updateData.slug = newSlug;
+    }
+    if (description !== undefined) updateData.description = description;
+    if (color) updateData.color = color;
+
+    const category = await Category.findByIdAndUpdate(req.params.id, updateData, { new: true });
+    if (!category) return res.status(404).json({ message: "Category not found" });
+    res.json(category);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+export const deleteCategory = async (req, res) => {
+  try {
+    const category = await Category.findByIdAndDelete(req.params.id);
+    if (!category) return res.status(404).json({ message: "Category not found" });
+    res.json({ message: "Category deleted successfully" });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

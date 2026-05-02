@@ -145,7 +145,7 @@ const SignInPage = () => {
             {/* Sign Up Link */}
             <div className="signin-footer">
               <p>Don't have an account? <a href="/register" className="signup-link">Create one</a></p>
-              <p style={{ marginTop: '10px', fontSize: '0.9rem' }}>Admin? <button type="button" onClick={handleAdminLoginClick} style={{ background: 'none', border: 'none', color: 'var(--primary-color)', cursor: 'pointer', fontWeight: '600', textDecoration: 'underline' }}>Login here</button></p>
+              <p style={{ marginTop: '10px' }}>Admin? <button type="button" onClick={handleAdminLoginClick} className="admin-link-btn">Login here</button></p>
             </div>
           </form>
 

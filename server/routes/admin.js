@@ -1,9 +1,9 @@
 import express from 'express';
-import { 
-  createSignatureCake, 
-  updateSignatureCake, 
-  createCake, 
-  updateCake, 
+import {
+  createSignatureCake,
+  updateSignatureCake,
+  createCake,
+  updateCake,
   deleteCake,
   addIngredient,
   deleteIngredient,
@@ -14,7 +14,11 @@ import {
   createPackagingOption,
   getPackagingOptions,
   updatePackagingOption,
-  deletePackagingOption
+  deletePackagingOption,
+  createCategory,
+  getCategories,
+  updateCategory,
+  deleteCategory,
 } from '../controllers/adminController.js';
 import { verifyAdmin } from '../middleware/authMiddleware.js';
 
@@ -63,5 +67,10 @@ router.put('/packaging-options/:id', verifyAdmin, updatePackagingOption);
 // DELETE /api/admin/packaging-options/:id (Admin only)
 router.delete('/packaging-options/:id', verifyAdmin, deletePackagingOption);
 
+// Category Routes
+router.get('/categories', verifyAdmin, getCategories);
+router.post('/categories', verifyAdmin, createCategory);
+router.put('/categories/:id', verifyAdmin, updateCategory);
+router.delete('/categories/:id', verifyAdmin, deleteCategory);
 
 export default router;

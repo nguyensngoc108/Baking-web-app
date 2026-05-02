@@ -7,6 +7,7 @@ export const useDashboardData = () => {
   const [orders, setOrders] = useState([]);
   const [packagingOptions, setPackagingOptions] = useState([]);
   const [availableIngredients, setAvailableIngredients] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
 
@@ -37,6 +38,10 @@ export const useDashboardData = () => {
       // Fetch ingredients
       const ingredientsRes = await api.get('/admin/ingredients');
       setAvailableIngredients(ingredientsRes.data || []);
+
+      // Fetch categories
+      const categoriesRes = await api.get('/admin/categories');
+      setCategories(categoriesRes.data || []);
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
       setMessage('Error loading dashboard data');
@@ -60,6 +65,8 @@ export const useDashboardData = () => {
     setPackagingOptions,
     availableIngredients,
     setAvailableIngredients,
+    categories,
+    setCategories,
     loading,
     setLoading,
     message,

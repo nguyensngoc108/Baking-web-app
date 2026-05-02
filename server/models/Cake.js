@@ -21,7 +21,7 @@ const cakeSchema = new mongoose.Schema({
   },
   category: {
     type: String,
-    enum: ['Chocolate', 'Vanilla', 'Fruit', 'Special'],
+    default: '',
   },
   available: {
     type: Boolean,
