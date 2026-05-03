@@ -247,24 +247,10 @@ const DashboardProducts = ({
   }, 0);
 
   // ── Shared image upload UI ──
-  const renderImageUploader = (target, imageFile, imagePreview, existingUrl, disabled) => (
-    <div className="form-group">
-      <label>Product Image</label>
-      {existingUrl && !imageFile && (
-        <div style={{ marginBottom: 12, display: 'flex', alignItems: 'center', gap: 12 }}>
-          <img src={existingUrl} alt="Current" style={{ width: 72, height: 72, objectFit: 'cover', borderRadius: 8, border: '2px solid #d1fae5' }} />
-          <span style={{ fontSize: '0.85rem', color: '#059669' }}>✓ Current image — select below to replace</span>
-        </div>
-      )}
-      <div
-        onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
-        onDrop={(e) => {
-          e.preventDefault(); e.stopPropagation();
-          const f = e.dataTransfer.files[0];
-          if (f) openCropper(f, target);
-        }}
-        style={{ border: '2px dashed #2563eb', borderRadius: 10, padding: '20px', textAlign: 'center', backgroundColor: '#f0f9ff', cursor: 'pointer' }}
-      >
+  const renderImageUploader = (target, imageFile, imagePreview, existingUrl, disabled) => {
+    const preview = imagePreview || existingUrl;
+    return (
+      <div className="img-uploader">
         <input
           type="file" accept="image/*"
           id={`${target}-image-input`}
@@ -272,31 +258,51 @@ const DashboardProducts = ({
           disabled={disabled}
           onChange={(e) => { const f = e.target.files[0]; if (f) { openCropper(f, target); e.target.value = ''; } }}
         />
-        <label htmlFor={`${target}-image-input`} style={{ cursor: 'pointer', display: 'block' }}>
-          <div style={{ fontSize: '2rem', marginBottom: 6 }}>📸</div>
-          <div style={{ fontWeight: 600, color: '#2563eb', fontSize: '0.9rem' }}>Click to upload or drag & drop</div>
-          <div style={{ color: '#6b7280', fontSize: '0.8rem' }}>JPEG, PNG, WebP, GIF · Will be cropped to 800×800px</div>
-        </label>
-      </div>
-      {imageFile && (
-        <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', backgroundColor: '#fef3c7', borderRadius: 8, border: '1px solid #fbbf24' }}>
-          <img src={imagePreview} alt="Preview" style={{ width: 56, height: 56, objectFit: 'cover', borderRadius: 6 }} />
-          <div style={{ flex: 1, fontSize: '0.85rem', color: '#92400e' }}>
-            <div>{imageFile.name}</div>
-            <div style={{ color: '#059669', fontWeight: 600, fontSize: '0.78rem' }}>✓ Cropped · 800×800px · {(imageFile.size / 1024).toFixed(0)} KB</div>
-          </div>
-          <button
-            type="button"
-            onClick={() => {
-              if (target === 'add') { setAddImageFile(null); setAddImagePreview(null); }
-              else { setCakeImageFile(null); setCakeImagePreview(existingUrl || null); }
-            }}
-            style={{ background: '#dc2626', color: 'white', border: 'none', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', fontSize: '0.8rem' }}
-          >✕</button>
+        <div
+          className="img-upload-zone"
+          onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+          onDrop={(e) => {
+            e.preventDefault(); e.stopPropagation();
+            const f = e.dataTransfer.files[0];
+            if (f && !disabled) openCropper(f, target);
+          }}
+        >
+          <label htmlFor={`${target}-image-input`} className={`img-upload-trigger${disabled ? ' disabled' : ''}`}>
+            {preview ? (
+              <>
+                <img src={preview} alt="Product" className="img-upload-preview" />
+                <div className="img-upload-overlay"><span>Change Image</span></div>
+              </>
+            ) : (
+              <div className="img-upload-empty">
+                <div className="img-upload-plus">+</div>
+                <div className="img-upload-cta">Upload Image</div>
+                <div className="img-upload-sub">Click or drag &amp; drop<br />JPEG · PNG · WebP</div>
+              </div>
+            )}
+          </label>
         </div>
-      )}
-    </div>
-  );
+        <div className="img-upload-meta">
+          {imageFile ? (
+            <>
+              <span className="img-upload-filename">{imageFile.name}</span>
+              <span className="img-upload-filesize">{(imageFile.size / 1024).toFixed(0)} KB · 800×800</span>
+              <button
+                type="button"
+                className="img-upload-remove"
+                onClick={() => {
+                  if (target === 'add') { setAddImageFile(null); setAddImagePreview(null); }
+                  else { setCakeImageFile(null); setCakeImagePreview(existingUrl || null); }
+                }}
+              >Remove</button>
+            </>
+          ) : (
+            <span className="img-upload-hint">{existingUrl ? 'Hover image to replace' : 'No image selected'}</span>
+          )}
+        </div>
+      </div>
+    );
+  };
 
   // ─────────────────────────────────────────────────────────────
   // MANAGE VIEW
@@ -326,56 +332,59 @@ const DashboardProducts = ({
         </div>
 
         {/* ── Section 1: Cake Details ── */}
-        <div className="dashboard-form" style={{ marginBottom: 28, backgroundColor: '#eff6ff', borderLeft: '4px solid #2563eb' }}>
-          <h3 style={{ margin: '0 0 20px 0' }}>Cake Details</h3>
+        <div className="dashboard-form" style={{ marginBottom: 28 }}>
+          <h3>Cake Details</h3>
           <form onSubmit={handleSaveCakeDetails}>
-            <div className="form-row">
-              <div className="form-group">
-                <label>Product Name *</label>
-                <input type="text" value={cakeForm.name || ''} onChange={(e) => setCakeForm({ ...cakeForm, name: e.target.value })} required disabled={isSavingCake} />
-              </div>
-              <div className="form-group">
-                <label>Price ($) *</label>
-                <input type="number" step="0.01" value={cakeForm.price || ''} onChange={(e) => setCakeForm({ ...cakeForm, price: e.target.value })} required disabled={isSavingCake} />
-              </div>
-            </div>
-
-            <div className="form-group">
-              <label>Description *</label>
-              <textarea value={cakeForm.description || ''} onChange={(e) => setCakeForm({ ...cakeForm, description: e.target.value })} required disabled={isSavingCake} />
-            </div>
-
-            <div className="form-row">
-              <div className="form-group">
-                <label>Category</label>
-                <select value={cakeForm.category || ''} onChange={(e) => setCakeForm({ ...cakeForm, category: e.target.value })} disabled={isSavingCake}>
-                  <option value="">— No category —</option>
-                  {categoryOptions}
-                </select>
-                {(categories || []).length === 0 && (
-                  <div style={{ fontSize: '0.78rem', color: '#f59e0b', marginTop: 4 }}>
-                    No categories yet — create them in the Categories tab.
+            <div className="product-form-layout">
+              <div className="product-form-fields">
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>Product Name *</label>
+                    <input type="text" value={cakeForm.name || ''} onChange={(e) => setCakeForm({ ...cakeForm, name: e.target.value })} required disabled={isSavingCake} />
                   </div>
-                )}
+                  <div className="form-group">
+                    <label>Price ($) *</label>
+                    <input type="number" step="0.01" value={cakeForm.price || ''} onChange={(e) => setCakeForm({ ...cakeForm, price: e.target.value })} required disabled={isSavingCake} />
+                  </div>
+                </div>
+                <div className="form-group">
+                  <label>Description *</label>
+                  <textarea value={cakeForm.description || ''} onChange={(e) => setCakeForm({ ...cakeForm, description: e.target.value })} required disabled={isSavingCake} />
+                </div>
+                <div className="form-group">
+                  <label>Category</label>
+                  <select value={cakeForm.category || ''} onChange={(e) => setCakeForm({ ...cakeForm, category: e.target.value })} disabled={isSavingCake}>
+                    <option value="">— No category —</option>
+                    {categoryOptions}
+                  </select>
+                  {(categories || []).length === 0 && (
+                    <div style={{ fontSize: '0.78rem', color: 'var(--warm-gray)', marginTop: 4 }}>
+                      No categories yet — create them in the Categories tab.
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="product-form-image">
+                <div className="form-group">
+                  <label>Product Image</label>
+                  {renderImageUploader('manage', cakeImageFile, cakeImagePreview, cakeForm.image, isSavingCake)}
+                </div>
               </div>
             </div>
-
-            {renderImageUploader('manage', cakeImageFile, cakeImagePreview, cakeForm.image, isSavingCake)}
-
             <div className="form-actions">
               <button type="submit" className="dashboard-btn-primary" disabled={isSavingCake || isUploadingCakeImage}>
-                {isSavingCake ? 'Saving...' : '💾 Save Cake Details'}
+                {isSavingCake ? 'Saving...' : 'Save Details'}
               </button>
             </div>
           </form>
         </div>
 
         {/* ── Section 2: Recipe Ingredients ── */}
-        <div className="dashboard-form" style={{ backgroundColor: '#f0fdf4', borderLeft: '4px solid #10b981' }}>
+        <div className="dashboard-form">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
             <h3 style={{ margin: 0 }}>Recipe Ingredients</h3>
-            <div style={{ fontWeight: 700, color: '#059669' }}>
-              Est. Cost: <span style={{ fontSize: '1.25rem' }}>${totalRecipeCost.toFixed(2)}</span>
+            <div style={{ fontSize: '0.82rem', color: 'var(--warm-gray)' }}>
+              Est. Cost: <span style={{ fontWeight: 700, color: 'var(--charcoal)', fontSize: '1rem' }}>${totalRecipeCost.toFixed(2)}</span>
             </div>
           </div>
 
@@ -446,15 +455,13 @@ const DashboardProducts = ({
 
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
             <button className="dashboard-btn-secondary" onClick={addRecipeRow}>+ Add Ingredient</button>
-            <button className="dashboard-btn-primary" onClick={handleSaveRecipe} disabled={isSavingRecipe}
-              style={{ background: '#059669', borderColor: '#059669' }}>
-              {isSavingRecipe ? 'Saving...' : '💾 Save Recipe'}
+            <button className="dashboard-btn-primary" onClick={handleSaveRecipe} disabled={isSavingRecipe}>
+              {isSavingRecipe ? 'Saving...' : 'Save Recipe'}
             </button>
           </div>
 
-          <div style={{ marginTop: 16, padding: '12px 16px', backgroundColor: '#fefce8', border: '1px solid #fef08a', borderRadius: 8, fontSize: '0.85rem', color: '#713f12' }}>
-            <strong>📐 Cost formula:</strong> (Package Cost ÷ Package Qty) × Qty per Cake &nbsp;
-            <span style={{ color: '#92400e' }}>e.g. ($10 ÷ 1000g) × 250g = $2.50</span>
+          <div className="info-box blue" style={{ marginTop: 16 }}>
+            Cost formula: (Package Cost ÷ Package Qty) × Qty per Cake — e.g. ($10 ÷ 1000g) × 250g = $2.50
           </div>
         </div>
 
@@ -485,41 +492,48 @@ const DashboardProducts = ({
 
       {/* Add-new form */}
       {showAddForm && (
-        <div className="dashboard-form" style={{ marginBottom: '25px', backgroundColor: '#eff6ff', borderLeft: '4px solid #2563eb' }}>
+        <div className="dashboard-form" style={{ marginBottom: '25px' }}>
           <h3>Add New Product</h3>
           <form onSubmit={handleAddProduct}>
-            <div className="form-row">
-              <div className="form-group">
-                <label>Product Name *</label>
-                <input type="text" placeholder="e.g., Chocolate Cake" value={newProduct.name}
-                  onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })} required disabled={isAddSubmitting} />
-              </div>
-              <div className="form-group">
-                <label>Price ($) *</label>
-                <input type="number" step="0.01" placeholder="29.99" value={newProduct.price}
-                  onChange={(e) => setNewProduct({ ...newProduct, price: e.target.value })} required disabled={isAddSubmitting} />
-              </div>
-            </div>
-            <div className="form-group">
-              <label>Description *</label>
-              <textarea placeholder="Describe the product..." value={newProduct.description}
-                onChange={(e) => setNewProduct({ ...newProduct, description: e.target.value })} required disabled={isAddSubmitting} />
-            </div>
-            <div className="form-row">
-              <div className="form-group">
-                <label>Category</label>
-                <select value={newProduct.category} onChange={(e) => setNewProduct({ ...newProduct, category: e.target.value })} disabled={isAddSubmitting}>
-                  <option value="">— No category —</option>
-                  {categoryOptions}
-                </select>
-                {(categories || []).length === 0 && (
-                  <div style={{ fontSize: '0.78rem', color: '#f59e0b', marginTop: 4 }}>
-                    No categories yet — create them in the Categories tab first.
+            <div className="product-form-layout">
+              <div className="product-form-fields">
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>Product Name *</label>
+                    <input type="text" placeholder="e.g., Chocolate Cake" value={newProduct.name}
+                      onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })} required disabled={isAddSubmitting} />
                   </div>
-                )}
+                  <div className="form-group">
+                    <label>Price ($) *</label>
+                    <input type="number" step="0.01" placeholder="29.99" value={newProduct.price}
+                      onChange={(e) => setNewProduct({ ...newProduct, price: e.target.value })} required disabled={isAddSubmitting} />
+                  </div>
+                </div>
+                <div className="form-group">
+                  <label>Description *</label>
+                  <textarea placeholder="Describe the product..." value={newProduct.description}
+                    onChange={(e) => setNewProduct({ ...newProduct, description: e.target.value })} required disabled={isAddSubmitting} />
+                </div>
+                <div className="form-group">
+                  <label>Category</label>
+                  <select value={newProduct.category} onChange={(e) => setNewProduct({ ...newProduct, category: e.target.value })} disabled={isAddSubmitting}>
+                    <option value="">— No category —</option>
+                    {categoryOptions}
+                  </select>
+                  {(categories || []).length === 0 && (
+                    <div style={{ fontSize: '0.78rem', color: 'var(--warm-gray)', marginTop: 4 }}>
+                      No categories yet — create them in the Categories tab first.
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="product-form-image">
+                <div className="form-group">
+                  <label>Product Image</label>
+                  {renderImageUploader('add', addImageFile, addImagePreview, null, isAddSubmitting)}
+                </div>
               </div>
             </div>
-            {renderImageUploader('add', addImageFile, addImagePreview, null, isAddSubmitting)}
             <div className="form-actions">
               <button type="submit" className="dashboard-btn-primary"
                 disabled={isAddSubmitting || isUploadingAddImage || !newProduct.name || !newProduct.price || !newProduct.description || !addImageFile}>
@@ -576,7 +590,7 @@ const DashboardProducts = ({
                       <div className="td-with-thumb">
                         {product.image
                           ? <img src={product.image} alt={product.name} className="product-thumb" />
-                          : <div className="product-thumb-placeholder">🍰</div>
+                          : <div className="product-thumb-placeholder" />
                         }
                         <span className="td-primary">{product.name}</span>
                       </div>
@@ -598,10 +612,10 @@ const DashboardProducts = ({
                     <td className="td-muted">{recipeCost > 0 ? `$${recipeCost.toFixed(2)}` : '—'}</td>
                     <td style={{ textAlign: 'center' }}>
                       <button className="dashboard-btn-small edit" onClick={() => setManagingProduct(product)}>
-                        ✏️ Manage
+                        Manage
                       </button>
                       <button className="dashboard-btn-small delete" onClick={() => handleDeleteProduct(product._id)} style={{ marginLeft: 6 }}>
-                        🗑️ Delete
+                        Delete
                       </button>
                     </td>
                   </tr>

@@ -54,14 +54,14 @@ export const login = async (req, res) => {
 // Admin registration
 export const register = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, username } = req.body;
 
     console.log("Registration request received:", { email });
 
-    if (!email || !password) {
+    if (!email || !password || !username) {
       return res
         .status(400)
-        .json({ message: "Email and password are required" });
+        .json({ message: "Email, password, and username are required" });
     }
 
     const existingAdmin = await Admin.findOne({ email });
@@ -70,7 +70,7 @@ export const register = async (req, res) => {
     }
 
     // Password will be hashed by Admin model's pre-save hook
-    const admin = new Admin({ email, password });
+    const admin = new Admin({ email, password, username });
     const savedAdmin = await admin.save();
 
     console.log("Admin registered successfully:", email);
@@ -80,6 +80,7 @@ export const register = async (req, res) => {
       admin: {
         id: savedAdmin._id,
         email: savedAdmin.email,
+        username: savedAdmin.username,
       },
     });
   } catch (error) {
