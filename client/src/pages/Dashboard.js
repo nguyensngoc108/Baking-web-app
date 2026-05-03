@@ -11,12 +11,12 @@ import DashboardOrders from './DashboardOrders';
 import DashboardPackaging from './DashboardPackaging';
 
 const NAV = [
-  { key: 'overview',    label: 'Overview',    icon: '📊' },
-  { key: 'products',    label: 'Products',    icon: '🍰' },
-  { key: 'categories',  label: 'Categories',  icon: '🏷️' },
-  { key: 'ingredients', label: 'Ingredients', icon: '🥘' },
-  { key: 'packaging',   label: 'Packaging',   icon: '📦' },
-  { key: 'orders',      label: 'Orders',      icon: '📋' },
+  { key: 'overview',    label: 'Overview' },
+  { key: 'products',    label: 'Products' },
+  { key: 'categories',  label: 'Categories' },
+  { key: 'ingredients', label: 'Ingredients' },
+  { key: 'packaging',   label: 'Packaging' },
+  { key: 'orders',      label: 'Orders' },
 ];
 
 const formatDate = () =>
@@ -26,14 +26,15 @@ const DashboardPage = () => {
   const [isLoggedIn, setIsLoggedIn]   = useState(false);
   const [activeTab, setActiveTab]     = useState('overview');
   const dashboardData                  = useDashboardData();
+  const { fetchDashboardData }         = dashboardData;
 
   useEffect(() => {
     const token = authService.getToken();
     if (token) {
       setIsLoggedIn(true);
-      dashboardData.fetchDashboardData();
+      fetchDashboardData();
     }
-  }, []);
+  }, [fetchDashboardData]);
 
   const handleLoginSuccess = () => {
     setIsLoggedIn(true);
@@ -59,11 +60,8 @@ const DashboardPage = () => {
       <aside className="dashboard-sidebar">
         <div className="sidebar-brand">
           <div className="sidebar-brand-mark">
-            <div className="sidebar-brand-icon">🍰</div>
-            <div>
-              <div className="sidebar-brand-name">S2UGAR</div>
-              <div className="sidebar-brand-sub">Admin Panel</div>
-            </div>
+            <div className="sidebar-brand-name">S2UGAR</div>
+            <div className="sidebar-brand-sub">Admin Panel</div>
           </div>
         </div>
 
@@ -75,7 +73,6 @@ const DashboardPage = () => {
               className={`nav-item ${activeTab === key ? 'active' : ''}`}
               onClick={() => setActiveTab(key)}
             >
-              <span className="nav-icon">{icon}</span>
               {label}
             </button>
           ))}
@@ -90,7 +87,7 @@ const DashboardPage = () => {
             </div>
           </div>
           <button className="dashboard-logout-btn" onClick={handleLogout}>
-            🚪 Sign out
+            Sign out
           </button>
         </div>
       </aside>
@@ -102,7 +99,7 @@ const DashboardPage = () => {
         <div className="dashboard-topbar">
           <div className="topbar-left">
             <div className="topbar-page-title">
-              {activeNav?.icon} {activeNav?.label}
+              {activeNav?.label}
             </div>
             <div className="topbar-breadcrumb">Dashboard › {activeNav?.label}</div>
           </div>
