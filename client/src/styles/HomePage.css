@@ -166,6 +166,40 @@
   flex-shrink: 0;
 }
 
+.nav-currency-toggle {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--border-dark);
+  overflow: hidden;
+}
+
+.currency-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.8px;
+  color: var(--warm-gray);
+  padding: 4px 9px;
+  transition: background 0.15s, color 0.15s;
+}
+
+.currency-btn:first-child {
+  border-right: 1px solid var(--border-dark);
+}
+
+.currency-btn.active {
+  background: var(--caramel);
+  color: var(--white);
+}
+
+.currency-btn:not(.active):hover {
+  background: var(--linen);
+  color: var(--charcoal);
+}
+
 .nav-cart-btn {
   position: relative;
   display: flex;
@@ -419,6 +453,12 @@
   transition: transform 0.55s ease;
 }
 
+.cake-card-placeholder {
+  width: 100%;
+  height: 100%;
+  background: var(--linen);
+}
+
 .cake-card:hover .cake-card-image img {
   transform: scale(1.05);
 }
@@ -467,7 +507,7 @@
 
 .cake-card-name {
   font-family: var(--font-body);
-  font-size: 0.88rem;
+  font-size: 1.3rem;
   font-weight: 500;
   color: var(--charcoal);
   margin-bottom: 4px;
@@ -476,7 +516,7 @@
 
 .cake-card-price {
   font-family: var(--font-body);
-  font-size: 0.83rem;
+  font-size: 1.13rem;
   color: var(--warm-gray);
   font-weight: 400;
 }

@@ -3,6 +3,8 @@ import '../styles/HomePage.css';
 import { useNavigate } from 'react-router-dom';
 import authService from '../services/authService';
 import api from '../services/httpServices';
+import cartService from '../services/cartService';
+import { useCurrency } from '../context/CurrencyContext';
 
 const BagIcon = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
@@ -13,19 +15,18 @@ const BagIcon = () => (
 );
 
 const HomePage = () => {
-  const navigate     = useNavigate();
-  const dropdownRef  = useRef(null);
+  const navigate                    = useNavigate();
+  const dropdownRef                 = useRef(null);
+  const { currency, setCurrency, formatPrice } = useCurrency();
 
   const [showAboutModal, setShowAboutModal]       = useState(false);
   const [showHowToBuyModal, setShowHowToBuyModal] = useState(false);
-  const [cartCount, setCartCount]                 = useState(0);
+  const [cartCount, setCartCount]                 = useState(() => cartService.getCount());
   const [isLoggedIn, setIsLoggedIn]               = useState(false);
   const [showUserDropdown, setShowUserDropdown]   = useState(false);
   const [userName, setUserName]                   = useState('');
-  const [categories] = useState([
-    'Birthday_Cakes', 'Wedding_Cakes', 'Anniversary_Cakes',
-    'Graduation_Cakes', 'Custom_Cakes', 'Seasonal_Cakes',
-  ]);
+  const [categories, setCategories]               = useState([]);
+  const [signatureCakes, setSignatureCakes]        = useState([]);
 
   // Auth check
   useEffect(() => {
@@ -58,6 +59,13 @@ const HomePage = () => {
     return () => observer.disconnect();
   }, []);
 
+  // Sync cart count when localStorage changes (other tabs or cartService.clearCart)
+  useEffect(() => {
+    const sync = () => setCartCount(cartService.getCount());
+    window.addEventListener('cartUpdated', sync);
+    return () => window.removeEventListener('cartUpdated', sync);
+  }, []);
+
   // Close user dropdown on outside click
   useEffect(() => {
     const handler = (e) => {
@@ -69,26 +77,19 @@ const HomePage = () => {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  const signatureCakes = [
-    {
-      id: 1,
-      name: 'Strawberry Dream',
-      price: 32.99,
-      image: 'https://images.unsplash.com/photo-1565958011703-44f9829ba187?w=600&h=600&fit=crop',
-    },
-    {
-      id: 2,
-      name: 'Chocolate Symphony',
-      price: 35.99,
-      image: 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=600&h=600&fit=crop',
-    },
-    {
-      id: 3,
-      name: 'Vanilla Bliss',
-      price: 29.99,
-      image: 'https://images.unsplash.com/photo-1464349095431-e9a21285b5f3?w=600&h=600&fit=crop',
-    },
-  ];
+  // Fetch categories and cakes from API
+  useEffect(() => {
+    api.get('/categories')
+      .then(({ data }) => setCategories(data))
+      .catch(() => {});
+
+    api.get('/cakes')
+      .then(({ data }) => {
+        const sorted = [...data].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        setSignatureCakes(sorted.slice(0, 4));
+      })
+      .catch(() => {});
+  }, []);
 
   const customerFeedbacks = [
     { id: 1, name: 'Sarah M.', feedback: 'The best cake I ever tasted! Perfect for my daughter\'s birthday.' },
@@ -118,7 +119,18 @@ const HomePage = () => {
           </div>
 
           <div className="nav-actions">
-            <button className="nav-cart-btn" onClick={() => navigate('/order')}>
+            <div className="nav-currency-toggle">
+              <button
+                className={`currency-btn${currency === 'NZD' ? ' active' : ''}`}
+                onClick={() => setCurrency('NZD')}
+              >NZD</button>
+              <button
+                className={`currency-btn${currency === 'USD' ? ' active' : ''}`}
+                onClick={() => setCurrency('USD')}
+              >USD</button>
+            </div>
+
+            <button className="nav-cart-btn" onClick={() => navigate('/cart')}>
               <BagIcon />
               {cartCount > 0 && <span className="cart-count-badge">{cartCount}</span>}
             </button>
@@ -173,15 +185,11 @@ const HomePage = () => {
         <div className="container">
           <h2 className="section-title">Shop by Occasion</h2>
           <div className="categories-grid">
-            {categories.map((cat, i) => {
-              const label = cat.replace(/_/g, ' ');
-              const path  = label.split(' ')[0].toLowerCase();
-              return (
-                <button key={i} className="category-item" onClick={() => navigate(`/menu/${path}`)}>
-                  {label}
-                </button>
-              );
-            })}
+            {categories.map((cat) => (
+              <button key={cat._id} className="category-item" onClick={() => navigate(`/menu/${cat.slug}`)}>
+                {cat.name}
+              </button>
+            ))}
           </div>
         </div>
       </section>
@@ -193,18 +201,25 @@ const HomePage = () => {
           <p className="cakes-section-sub">Our signature cakes that keep customers coming back</p>
           <div className="cakes-grid">
             {signatureCakes.map((cake) => (
-              <div key={cake.id} className="cake-card">
+              <div key={cake._id} className="cake-card" onClick={() => navigate(`/product/${cake._id}`)}>
                 <div className="cake-card-image">
-                  <img src={cake.image} alt={cake.name} />
+                  {cake.image
+                    ? <img src={cake.image} alt={cake.name} />
+                    : <div className="cake-card-placeholder" />
+                  }
                   <div className="cake-card-overlay">
-                    <button onClick={() => { setCartCount(c => c + 1); navigate('/order'); }}>
+                    <button onClick={(e) => {
+                      e.stopPropagation();
+                      cartService.addItem(cake);
+                      setCartCount(cartService.getCount());
+                    }}>
                       Add to Cart
                     </button>
                   </div>
                 </div>
                 <div className="cake-card-info">
                   <h4 className="cake-card-name">{cake.name}</h4>
-                  <p className="cake-card-price">${cake.price.toFixed(2)}</p>
+                  <p className="cake-card-price">{formatPrice(parseFloat(cake.price))}</p>
                 </div>
               </div>
             ))}
