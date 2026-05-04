@@ -49,7 +49,12 @@ const SignInPage = () => {
         navigate('/');
       }, 1500);
     } catch (error) {
-      setMessage(error.response?.data?.message || 'Login failed. Please check your credentials.');
+      const data = error.response?.data;
+      if (data?.pendingVerification) {
+        navigate('/register', { state: { step: 'otp', email: data.email } });
+        return;
+      }
+      setMessage(data?.message || 'Login failed. Please check your credentials.');
       console.error('Login error:', error);
     } finally {
       setLoading(false);

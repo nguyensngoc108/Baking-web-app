@@ -134,8 +134,8 @@ const CartPage = () => {
                   </span>
                 </div>
                 <p className="cart-note">Final price may vary based on size and customization</p>
-                <button className="cart-checkout-btn" onClick={() => navigate('/order')}>
-                  Place Order
+                <button className="cart-checkout-btn" onClick={() => navigate('/checkout')}>
+                  Proceed to Checkout
                 </button>
               </div>
             </>
