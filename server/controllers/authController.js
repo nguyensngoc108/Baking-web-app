@@ -1,3 +1,4 @@
+import crypto from "crypto";
 import bcryptjs from "bcryptjs";
 import Admin from "../models/Admin.js";
 import User from "../models/User.js";
@@ -254,51 +255,137 @@ export const verifyEmail = async (req, res) => {
 export const forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
-    if (!email) {
-      return res.status(400).json({ message: "Email is required" });
-    }
-    const user = await User.findOne({ email: email });
-    console.log("Forgot password request received for:", email);
+    if (!email) return res.status(400).json({ message: "Email is required" });
+
+    const user = await User.findOne({ email, isVerified: true });
     if (!user) {
-      return res.status(404).json({ message: "User not found" });
+      return res.status(404).json({ message: "No account found with this email address" });
+    }
+
+    // Check if account is locked from too many OTP attempts
+    if (user.resetOTPLockedUntil && user.resetOTPLockedUntil > Date.now()) {
+      const minutesLeft = Math.ceil((user.resetOTPLockedUntil - Date.now()) / 60000);
+      return res.status(429).json({
+        message: `Account is temporarily locked. Please try again in ${minutesLeft} minute${minutesLeft !== 1 ? 's' : ''}.`,
+        lockedUntil: user.resetOTPLockedUntil,
+      });
+    }
+
+    // 60-second cooldown between resend requests
+    if (user.resetOTPRequestedAt && Date.now() - new Date(user.resetOTPRequestedAt).getTime() < 60 * 1000) {
+      const remaining = Math.ceil((60 * 1000 - (Date.now() - new Date(user.resetOTPRequestedAt).getTime())) / 1000);
+      return res.status(429).json({
+        message: `Please wait ${remaining} seconds before requesting a new code.`,
+        remaining,
+      });
     }
 
     const otp = generateOTP();
     user.resetOTP = otp;
-    user.resetOTPExpires = Date.now() + 15 * 60 * 1000;
+    user.resetOTPExpires = new Date(Date.now() + 15 * 60 * 1000);
     user.resetAttempts = 0;
+    user.resetOTPLockedUntil = null;
+    user.resetOTPRequestedAt = new Date();
     await user.save();
-    await sendOTPEmail(email, otp, user.firstName + " " + user.lastName);
-    res.json({ message: "OTP sent to email" });
+
+    await sendOTPEmail(email, otp, `${user.firstName} ${user.lastName}`);
+    res.json({ message: "Verification code sent to your email" });
   } catch (error) {
     console.error("Forgot password error:", error);
     res.status(500).json({ message: error.message });
   }
 };
 
-export const resetPassword = async (req, res) => {
+export const verifyResetOTP = async (req, res) => {
   try {
-    const { email, otp, newPassword } = req.body;
-    if (!email || !otp || !newPassword) {
-      return res
-        .status(400)
-        .json({ message: "Email, OTP, and new password are required" });
+    const { email, otp } = req.body;
+    if (!email || !otp) {
+      return res.status(400).json({ message: "Email and code are required" });
     }
-    const user = await User.findOne({ email: email });
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
+
+    const user = await User.findOne({ email });
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    // Check lockout
+    if (user.resetOTPLockedUntil && user.resetOTPLockedUntil > Date.now()) {
+      const minutesLeft = Math.ceil((user.resetOTPLockedUntil - Date.now()) / 60000);
+      return res.status(429).json({
+        message: `Too many failed attempts. Try again in ${minutesLeft} minute${minutesLeft !== 1 ? 's' : ''}.`,
+        lockedUntil: user.resetOTPLockedUntil,
+      });
     }
-    if (user.resetOTP !== otp || user.resetOTPExpires < Date.now()) {
-      user.resetAttempts += 1;
+
+    // Check OTP expiry
+    if (!user.resetOTP || !user.resetOTPExpires || user.resetOTPExpires < Date.now()) {
+      return res.status(400).json({ message: "Code has expired. Please request a new one." });
+    }
+
+    // Wrong OTP
+    if (user.resetOTP !== otp) {
+      user.resetAttempts = (user.resetAttempts || 0) + 1;
+      if (user.resetAttempts >= 3) {
+        user.resetOTPLockedUntil = new Date(Date.now() + 15 * 60 * 1000);
+        user.resetOTP = null;
+        user.resetOTPExpires = null;
+        await user.save();
+        return res.status(429).json({
+          message: "Too many failed attempts. Please request a new code in 15 minutes.",
+          lockedUntil: user.resetOTPLockedUntil,
+        });
+      }
       await user.save();
-      return res.status(400).json({ message: "Invalid or expired OTP" });
+      const remaining = 3 - user.resetAttempts;
+      return res.status(400).json({
+        message: `Incorrect code. ${remaining} attempt${remaining !== 1 ? 's' : ''} remaining.`,
+        attemptsRemaining: remaining,
+      });
     }
-    user.password = newPassword;
+
+    // OTP correct — issue a short-lived password reset token
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    user.passwordResetToken = resetToken;
+    user.passwordResetTokenExpires = new Date(Date.now() + 10 * 60 * 1000);
     user.resetOTP = null;
     user.resetOTPExpires = null;
     user.resetAttempts = 0;
     await user.save();
-    res.json({ message: "Password reset successful" });
+
+    res.json({ message: "Code verified", resetToken });
+  } catch (error) {
+    console.error("Verify reset OTP error:", error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const resetPassword = async (req, res) => {
+  try {
+    const { email, resetToken, newPassword } = req.body;
+    if (!email || !resetToken || !newPassword) {
+      return res.status(400).json({ message: "All fields are required" });
+    }
+    if (newPassword.length < 8) {
+      return res.status(400).json({ message: "Password must be at least 8 characters" });
+    }
+
+    const user = await User.findOne({ email });
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    if (
+      !user.passwordResetToken ||
+      user.passwordResetToken !== resetToken ||
+      user.passwordResetTokenExpires < Date.now()
+    ) {
+      return res.status(400).json({ message: "Reset session has expired. Please start over." });
+    }
+
+    user.password = newPassword;
+    user.passwordResetToken = null;
+    user.passwordResetTokenExpires = null;
+    user.resetOTPLockedUntil = null;
+    user.resetOTPRequestedAt = null;
+    await user.save();
+
+    res.json({ message: "Password reset successfully. You can now sign in." });
   } catch (error) {
     console.error("Reset password error:", error);
     res.status(500).json({ message: error.message });

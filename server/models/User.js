@@ -52,6 +52,22 @@ const userSchema = new mongoose.Schema({
     type: Number,
     default: 0,
   },
+  resetOTPLockedUntil: {
+    type: Date,
+    default: null,
+  },
+  resetOTPRequestedAt: {
+    type: Date,
+    default: null,
+  },
+  passwordResetToken: {
+    type: String,
+    default: null,
+  },
+  passwordResetTokenExpires: {
+    type: Date,
+    default: null,
+  },
   phone: {
     type: String,
   },

@@ -14,6 +14,7 @@ import DashboardPage from './pages/Dashboard';
 import DashboardLogin from './pages/DashboardLogin';
 import RegisterPage from './pages/RegisterPage';
 import SignInPage from './pages/SignInPage';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
 
 function App() {
   return (
@@ -30,6 +31,7 @@ function App() {
           <Route path="/dashboard-login" element={<DashboardLogin />} />
           <Route path="/admin" element={<DashboardPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         </Routes>
       </Router>
     </CurrencyProvider>

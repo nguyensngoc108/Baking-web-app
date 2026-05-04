@@ -41,6 +41,21 @@ export const verifyEmail = (email, otp) => {
     return api.post('/auth/user/verify-email', { email, otp });
 };
 
+// Forgot password — request OTP
+export const forgotPassword = (email) => {
+    return api.post('/auth/user/forgot-password', { email });
+};
+
+// Verify reset OTP — returns a one-time resetToken on success
+export const verifyResetOTP = (email, otp) => {
+    return api.post('/auth/user/verify-reset-otp', { email, otp });
+};
+
+// Reset password using the resetToken obtained after OTP verification
+export const resetPassword = (email, resetToken, newPassword) => {
+    return api.post('/auth/user/reset-password', { email, resetToken, newPassword });
+};
+
 // Logout
 export const logout = () => {
     localStorage.removeItem('token');
@@ -62,6 +77,9 @@ export default {
     userLogin,
     userRegister,
     verifyEmail,
+    forgotPassword,
+    verifyResetOTP,
+    resetPassword,
     logout,
     saveToken,
     getToken

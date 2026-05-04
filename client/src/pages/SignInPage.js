@@ -128,7 +128,7 @@ const SignInPage = () => {
                 />
                 <label htmlFor="rememberMe">Remember me</label>
               </div>
-              <a href="#forgot" className="forgot-password-link">Forgot password?</a>
+              <button type="button" className="forgot-password-link" onClick={() => navigate('/forgot-password')}>Forgot password?</button>
             </div>
 
             {/* Messages */}
