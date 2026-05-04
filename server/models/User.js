@@ -23,6 +23,23 @@ const userSchema = new mongoose.Schema({
   address: {
     type: String,
   },
+  isVerified: {
+    type: Boolean,
+    default: false,
+  },
+  verificationOTP: {
+    type: String,
+    default: null,
+  },
+  verificationOTPExpires: {
+    type: Date,
+    default: null,
+  },
+  verificationExpiresAt: {
+    type: Date,
+    default: null,
+    index: { expireAfterSeconds: 0 }, // MongoDB auto-deletes unverified docs at this time
+  },
   resetOTP: {
     type: String,
     default: null,

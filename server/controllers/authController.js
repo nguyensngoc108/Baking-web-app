@@ -1,4 +1,4 @@
-import bcyptjs from "bcryptjs";
+import bcryptjs from "bcryptjs";
 import Admin from "../models/Admin.js";
 import User from "../models/User.js";
 import {
@@ -6,7 +6,7 @@ import {
   generateUserToken,
 } from "../middleware/authMiddleware.js";
 import { generateOTP } from "../utils/Services.js";
-import { sendOTPEmail } from "../utils/emailService.js";
+import { sendOTPEmail, sendVerificationOTP } from "../utils/emailService.js";
 // Admin login
 export const login = async (req, res) => {
   try {
@@ -28,7 +28,7 @@ export const login = async (req, res) => {
     }
 
     // Compare passwords
-    const passwordMatch = await bcyptjs.compare(password, admin.password);
+    const passwordMatch = await bcryptjs.compare(password, admin.password);
     if (!passwordMatch) {
       return res.status(401).json({ message: "Invalid email or password" });
     }
@@ -109,8 +109,24 @@ export const loginUser = async (req, res) => {
       return res.status(401).json({ message: "Invalid email or password" });
     }
 
+    // Unverified account — resend a fresh OTP and tell the client to redirect
+    if (user.isVerified === false) {
+      const otp = generateOTP();
+      const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
+      user.verificationOTP = otp;
+      user.verificationOTPExpires = expiresAt;
+      user.verificationExpiresAt = expiresAt;
+      await user.save();
+      await sendVerificationOTP(email, otp, user.firstName);
+      return res.status(403).json({
+        pendingVerification: true,
+        email,
+        message: "Your email is not verified. We've sent a new code — please check your inbox.",
+      });
+    }
+
     // Compare passwords
-    const passwordMatch = await bcyptjs.compare(password, user.password);
+    const passwordMatch = await bcryptjs.compare(password, user.password);
     if (!passwordMatch) {
       return res.status(401).json({ message: "Invalid email or password" });
     }
@@ -135,7 +151,7 @@ export const loginUser = async (req, res) => {
   }
 };
 
-// User registration
+// User registration — creates unverified account and sends OTP
 export const registerUser = async (req, res) => {
   try {
     const {
@@ -151,66 +167,86 @@ export const registerUser = async (req, res) => {
       dietaryRestrictions,
     } = req.body;
 
-    console.log("User registration request received:", { email });
-
-    // Validate required fields
-    if (
-      !firstName ||
-      !lastName ||
-      !email ||
-      !password ||
-      !phone ||
-      !street ||
-      !city ||
-      !postalCode
-    ) {
-      return res
-        .status(400)
-        .json({ message: "All required fields must be provided" });
+    if (!firstName || !lastName || !email || !password || !phone || !street || !city || !postalCode) {
+      return res.status(400).json({ message: "All required fields must be provided" });
     }
 
-    // Check if email already exists
     const existingUser = await User.findOne({ email });
-    if (existingUser) {
+    if (existingUser && existingUser.isVerified) {
       return res.status(400).json({ message: "Email already in use" });
     }
 
-    // Combine address fields
     const address = `${street}, ${city}, ${postalCode}`;
-
-    // Combine details
     const details = `Dietary Restrictions: ${dietaryRestrictions || "None"}`;
+    const otp = generateOTP();
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
 
-    // Create new user - Password will be hashed by User model's pre-save hook
-    const user = new User({
-      firstName,
-      lastName,
-      email,
-      password,
-      phone,
-      gender,
-      address,
-      details,
-    });
+    if (existingUser && !existingUser.isVerified) {
+      // Update ALL fields — user may be re-registering with new data
+      existingUser.firstName = firstName;
+      existingUser.lastName = lastName;
+      existingUser.gender = gender;
+      existingUser.phone = phone;
+      existingUser.address = address;
+      existingUser.details = details;
+      existingUser.password = password; // pre-save hook will re-hash
+      existingUser.verificationOTP = otp;
+      existingUser.verificationOTPExpires = expiresAt;
+      existingUser.verificationExpiresAt = expiresAt; // reset TTL window
+      await existingUser.save();
+    } else {
+      const user = new User({
+        firstName, lastName, email, password, phone, gender, address, details,
+        isVerified: false,
+        verificationOTP: otp,
+        verificationOTPExpires: expiresAt,
+        verificationExpiresAt: expiresAt,
+      });
+      await user.save();
+    }
 
-    const savedUser = await user.save();
+    await sendVerificationOTP(email, otp, firstName);
 
-    // Generate JWT token
-    const token = generateUserToken(savedUser);
-
-    console.log("User registered successfully:", email);
-    res.status(201).json({
-      message: "User registered successfully",
-      token,
-      user: {
-        id: savedUser._id,
-        firstName: savedUser.firstName,
-        lastName: savedUser.lastName,
-        email: savedUser.email,
-      },
-    });
+    res.status(201).json({ message: "Verification code sent to your email", email });
   } catch (error) {
     console.error("User registration error:", error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Verify email OTP — completes registration and returns token
+export const verifyEmail = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+    if (!email || !otp) {
+      return res.status(400).json({ message: "Email and OTP are required" });
+    }
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    if (user.isVerified) {
+      return res.status(400).json({ message: "Email is already verified" });
+    }
+    if (user.verificationOTP !== otp || user.verificationOTPExpires < Date.now()) {
+      return res.status(400).json({ message: "Invalid or expired verification code" });
+    }
+
+    user.isVerified = true;
+    user.verificationOTP = null;
+    user.verificationOTPExpires = null;
+    user.verificationExpiresAt = null; // disarm TTL — verified users must never be auto-deleted
+    await user.save();
+
+    const token = generateUserToken(user);
+    res.json({
+      message: "Email verified successfully",
+      token,
+      user: { id: user._id, firstName: user.firstName, lastName: user.lastName, email: user.email },
+    });
+  } catch (error) {
+    console.error("Email verification error:", error);
     res.status(500).json({ message: error.message });
   }
 };

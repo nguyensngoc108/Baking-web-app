@@ -397,3 +397,16 @@
     padding: 32px 20px;
   }
 }
+
+.register-otp-hint {
+  font-size: 0.93rem;
+  color: #6b6460;
+  line-height: 1.6;
+  margin: -8px 0 20px;
+  text-align: center;
+}
+
+.resend-cooldown {
+  color: #9c9088;
+  font-size: 0.88rem;
+}

@@ -1,15 +1,38 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import '../styles/RegisterPage.css';
 import authService from '../services/authService';
 
 const RegisterPage = () => {
   const navigate = useNavigate();
+  const { state: navState } = useLocation();
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [passwordStrength, setPasswordStrength] = useState(0);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  // OTP verification step — can be pre-seeded from login redirect
+  const [step, setStep] = useState(navState?.step === 'otp' ? 'otp' : 'form');
+  const [pendingEmail, setPendingEmail] = useState(navState?.email || '');
+  const [otp, setOtp] = useState('');
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const cooldownRef = useRef(null);
+
+  useEffect(() => {
+    if (step === 'otp') {
+      setResendCooldown(60);
+    }
+    return () => clearInterval(cooldownRef.current);
+  }, [step]);
+
+  useEffect(() => {
+    if (resendCooldown <= 0) { clearInterval(cooldownRef.current); return; }
+    cooldownRef.current = setInterval(() => {
+      setResendCooldown(prev => prev - 1);
+    }, 1000);
+    return () => clearInterval(cooldownRef.current);
+  }, [resendCooldown]);
 
   const [formData, setFormData] = useState({
     firstName: '',
@@ -98,48 +121,54 @@ const RegisterPage = () => {
       setLoading(true);
       setMessage('');
 
-      // Call the registration API
-      const response = await authService.userRegister(
-        formData.firstName,
-        formData.lastName,
-        formData.gender,
-        formData.email,
-        formData.phone,
-        formData.password,
-        formData.street,
-        formData.city,
-        formData.postalCode,
+      await authService.userRegister(
+        formData.firstName, formData.lastName, formData.gender,
+        formData.email, formData.phone, formData.password,
+        formData.street, formData.city, formData.postalCode,
         formData.dietaryRestrictions
       );
 
-      // Save token from response
-      authService.saveToken(response.data.token);
-
-      setMessage('Registration successful! Redirecting to home...');
-      
-      // Reset form
-      setFormData({
-        firstName: '',
-        lastName: '',
-        gender: 'prefer-not-to-say',
-        email: '',
-        phone: '',
-        password: '',
-        confirmPassword: '',
-        street: '',
-        city: '',
-        postalCode: '',
-        dietaryRestrictions: '',
-        agreeToTerms: false,
-      });
-
-      // Redirect to home after 2 seconds
-      setTimeout(() => {
-        navigate('/');
-      }, 2000);
+      setPendingEmail(formData.email);
+      setStep('otp');
+      setMessage('');
     } catch (error) {
-      setMessage(error.response?.data?.message || 'Error during registration: ' + error.message);
-      console.error('Registration error:', error);
+      setMessage(error.response?.data?.message || 'Registration failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendOTP = async () => {
+    try {
+      setLoading(true);
+      setMessage('');
+      await authService.userRegister(
+        formData.firstName, formData.lastName, formData.gender,
+        pendingEmail, formData.phone, formData.password,
+        formData.street, formData.city, formData.postalCode,
+        formData.dietaryRestrictions
+      );
+      setResendCooldown(60);
+      setMessage('A new code has been sent to your email.');
+    } catch (error) {
+      setMessage(error.response?.data?.message || 'Failed to resend code. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyOTP = async (e) => {
+    e.preventDefault();
+    if (!otp.trim()) { setMessage('Please enter the verification code.'); return; }
+    try {
+      setLoading(true);
+      setMessage('');
+      const response = await authService.verifyEmail(pendingEmail, otp.trim());
+      authService.saveToken(response.data.token);
+      setMessage('Email verified! Redirecting…');
+      setTimeout(() => navigate('/'), 1500);
+    } catch (error) {
+      setMessage(error.response?.data?.message || 'Invalid or expired code. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -171,9 +200,60 @@ const RegisterPage = () => {
       {/* Register Container */}
       <div className="register-container">
         <div className="register-form-wrapper">
+
+          {step === 'otp' ? (
+            <>
+              <div className="register-header">
+                <h1>Check your email</h1>
+              </div>
+              <p className="register-otp-hint">
+                We sent a 6-digit verification code to <strong>{pendingEmail}</strong>.
+                Enter it below to complete your registration.
+              </p>
+              <form onSubmit={handleVerifyOTP} className="register-form">
+                <div className="register-form-group">
+                  <label htmlFor="otp">Verification Code</label>
+                  <input
+                    id="otp"
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={6}
+                    placeholder="000000"
+                    value={otp}
+                    onChange={e => { setOtp(e.target.value); setMessage(''); }}
+                    autoFocus
+                    style={{ letterSpacing: '6px', fontSize: '1.4rem', textAlign: 'center' }}
+                  />
+                </div>
+                {message && (
+                  <div className={`register-message ${message.includes('verified') ? 'success' : 'error'}`}>
+                    {message}
+                  </div>
+                )}
+                <button type="submit" disabled={loading} className="register-submit-btn">
+                  {loading ? 'Verifying…' : 'Verify Email'}
+                </button>
+                <div className="register-footer">
+                  <p>
+                    Didn't receive it?{' '}
+                    {resendCooldown > 0
+                      ? <span className="resend-cooldown">Resend in {resendCooldown}s</span>
+                      : <button type="button" className="login-link" onClick={handleResendOTP} disabled={loading}>Resend code</button>
+                    }
+                  </p>
+                  <p>
+                    Wrong email?{' '}
+                    <button type="button" className="login-link" onClick={() => { setStep('form'); setMessage(''); }}>
+                      Go back
+                    </button>
+                  </p>
+                </div>
+              </form>
+            </>
+          ) : (
+          <>
           <div className="register-header">
             <h1>Create Your Account</h1>
-            
           </div>
 
           <form onSubmit={handleSubmit} className="register-form">
@@ -416,6 +496,8 @@ const RegisterPage = () => {
               <p>Already have an account? <button className="login-link" onClick={() => navigate('/signin')}>Login here</button></p>
             </div>
           </form>
+          </>
+          )}
         </div>
       </div>
 

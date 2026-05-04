@@ -36,6 +36,11 @@ export const userRegister = (firstName, lastName, gender, email, phone, password
     });
 };
 
+// Verify email OTP after registration
+export const verifyEmail = (email, otp) => {
+    return api.post('/auth/user/verify-email', { email, otp });
+};
+
 // Logout
 export const logout = () => {
     localStorage.removeItem('token');
@@ -56,6 +61,7 @@ export default {
     adminRegister,
     userLogin,
     userRegister,
+    verifyEmail,
     logout,
     saveToken,
     getToken

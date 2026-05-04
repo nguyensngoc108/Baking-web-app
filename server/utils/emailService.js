@@ -1,167 +1,143 @@
-import nodemailer from 'nodemailer';
-import dotenv from 'dotenv';
-dotenv.config();
+import { Resend } from 'resend';
 
-// Initialize Nodemailer transporter with environment variables
-const transporter = nodemailer.createTransport({
-  service: process.env.EMAIL_SERVICE || 'gmail',
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASSWORD,
-  },
-});
+const resend = new Resend(process.env.RESEND_API_KEY);
+const FROM = 'S2UGAR <noreply@s2ugar.com>';
 
-// Verify transporter connection
-transporter.verify((error, success) => {
+const baseStyle = `
+  font-family: Georgia, 'Times New Roman', serif;
+  max-width: 560px;
+  margin: 0 auto;
+  background: #ffffff;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid #e5e0d8;
+`;
+
+const header = `
+  <div style="background: #2c2520; padding: 28px 36px; text-align: center;">
+    <h1 style="margin: 0; color: #f5f0e8; font-size: 32px; font-weight: 900; letter-spacing: 8px; font-family: Arial, Helvetica, sans-serif;">S2UGAR</h1>
+    <p style="margin: 6px 0 0; color: #b8a898; font-size: 11px; letter-spacing: 2px; font-family: Arial, Helvetica, sans-serif;">ARTISAN BAKERY</p>
+  </div>
+`;
+
+const footer = `
+  <div style="padding: 20px 36px; background: #faf8f5; border-top: 1px solid #e5e0d8; text-align: center;">
+    <p style="margin: 0; color: #9c9088; font-size: 12px;">© S2UGAR Artisan Bakery · s2ugar.com</p>
+  </div>
+`;
+
+const wrap = (body) => `
+  <div style="${baseStyle}">
+    ${header}
+    <div style="padding: 36px;">
+      ${body}
+    </div>
+    ${footer}
+  </div>
+`;
+
+const send = async ({ to, subject, html, text }) => {
+  const { error } = await resend.emails.send({ from: FROM, to, subject, html, text });
   if (error) {
-    console.error('Email transporter connection error:', error.message);
-  } else if (success) {
-    console.log('Email transporter ready to send messages');
+    console.error('[Resend] Failed to send email to', to, error);
+    throw new Error(error.message);
   }
-});
+  console.log('[Resend] Email sent to', to, '—', subject);
+};
 
-const FROM_EMAIL = process.env.EMAIL_USER;
+export const sendVerificationOTP = async (email, otp, firstName = 'there') => {
+  const html = wrap(`
+    <p style="margin: 0 0 6px; color: #6b6460; font-size: 14px;">Hi ${firstName},</p>
+    <h2 style="margin: 0 0 20px; color: #2c2520; font-size: 20px;">Verify your email</h2>
+    <p style="color: #6b6460; font-size: 14px; line-height: 1.6;">
+      Enter the code below to complete your S2UGAR account registration.
+      This code expires in <strong>15 minutes</strong>.
+    </p>
+    <div style="background: #f5f0e8; border-radius: 10px; padding: 28px; text-align: center; margin: 24px 0;">
+      <p style="margin: 0 0 6px; color: #9c9088; font-size: 12px; letter-spacing: 1px; text-transform: uppercase;">Verification Code</p>
+      <p style="margin: 0; font-size: 42px; font-weight: 700; letter-spacing: 12px; color: #2c2520; font-family: 'Courier New', Courier, monospace;">${otp}</p>
+    </div>
+    <p style="color: #9c9088; font-size: 12px; line-height: 1.6;">
+      If you didn't create an account, you can safely ignore this email.
+    </p>
+  `);
+
+  await send({
+    to: email,
+    subject: 'Your S2UGAR verification code',
+    html,
+    text: `Hi ${firstName}, your S2UGAR verification code is: ${otp}. It expires in 15 minutes.`,
+  });
+};
+
+export const sendOTPEmail = async (email, otp, userName = 'there') => {
+  const firstName = userName.split(' ')[0] || 'there';
+  const html = wrap(`
+    <p style="margin: 0 0 6px; color: #6b6460; font-size: 14px;">Hi ${firstName},</p>
+    <h2 style="margin: 0 0 20px; color: #2c2520; font-size: 20px;">Reset your password</h2>
+    <p style="color: #6b6460; font-size: 14px; line-height: 1.6;">
+      We received a request to reset your S2UGAR password.
+      Use the code below — it expires in <strong>15 minutes</strong>.
+    </p>
+    <div style="background: #f5f0e8; border-radius: 10px; padding: 28px; text-align: center; margin: 24px 0;">
+      <p style="margin: 0 0 6px; color: #9c9088; font-size: 12px; letter-spacing: 1px; text-transform: uppercase;">Reset Code</p>
+      <p style="margin: 0; font-size: 42px; font-weight: 700; letter-spacing: 12px; color: #2c2520; font-family: 'Courier New', Courier, monospace;">${otp}</p>
+    </div>
+    <p style="color: #9c9088; font-size: 12px; line-height: 1.6;">
+      If you didn't request a password reset, ignore this email — your account remains secure.
+    </p>
+  `);
+
+  await send({
+    to: email,
+    subject: 'Your S2UGAR password reset code',
+    html,
+    text: `Hi ${firstName}, your S2UGAR password reset code is: ${otp}. It expires in 15 minutes.`,
+  });
+};
 
 export const sendOrderConfirmation = async (order) => {
-  const plainText = `
-Order Confirmation
+  const html = wrap(`
+    <p style="margin: 0 0 6px; color: #6b6460; font-size: 14px;">Hi ${order.customerName || 'there'},</p>
+    <h2 style="margin: 0 0 20px; color: #2c2520; font-size: 20px;">Your order is confirmed!</h2>
+    <p style="color: #6b6460; font-size: 14px; line-height: 1.6;">
+      Thank you for ordering from S2UGAR. We've received your order and will be in touch shortly.
+    </p>
+    <div style="background: #faf8f5; border: 1px solid #e5e0d8; border-radius: 10px; padding: 20px; margin: 24px 0;">
+      <p style="margin: 0 0 8px; color: #2c2520; font-size: 13px;"><strong>Order ID:</strong> ${order._id}</p>
+      <p style="margin: 0 0 8px; color: #2c2520; font-size: 13px;"><strong>Total:</strong> $${order.totalPrice}</p>
+      <p style="margin: 0; color: #2c2520; font-size: 13px;"><strong>Delivery Date:</strong> ${order.deliveryDate}</p>
+    </div>
+    <p style="color: #9c9088; font-size: 12px; line-height: 1.6;">
+      Questions? Contact us at s2ugar.com.
+    </p>
+  `);
 
-Dear ${order.customerName},
-
-Thank you for your order. Here are the details:
-
-Order ID: ${order._id}
-Total Price: $${order.totalPrice}
-Delivery Date: ${order.deliveryDate}
-
-We will contact you soon to confirm your order.
-
-Best regards,
-Baking Shop Team
-  `.trim();
-
-  const msg = {
-    from: FROM_EMAIL,
+  await send({
     to: order.customerEmail,
-    subject: 'Order Confirmation - Baking Shop',
-    text: plainText,
-    html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2 style="color: #333;">Your Order Has Been Received!</h2>
-        <p>Dear ${order.customerName},</p>
-        <p>Thank you for your order. Here are the details:</p>
-        <div style="background: #f9f9f9; padding: 15px; border-left: 4px solid #ff9800; margin: 20px 0;">
-          <p><strong>Order ID:</strong> ${order._id}</p>
-          <p><strong>Total Price:</strong> $${order.totalPrice}</p>
-          <p><strong>Delivery Date:</strong> ${order.deliveryDate}</p>
-        </div>
-        <p>We will contact you soon to confirm your order.</p>
-        <p>Best regards,<br><strong>Baking Shop Team</strong></p>
-      </div>
-    `,
-  };
-
-  try {
-    const info = await transporter.sendMail(msg);
-    console.log('Order confirmation email sent successfully to:', order.customerEmail);
-    console.log('Message ID:', info.messageId);
-  } catch (error) {
-    console.error('Error sending order confirmation email:', error.message);
-    throw error;
-  }
+    subject: 'Order confirmed — S2UGAR',
+    html,
+    text: `Hi ${order.customerName}, your S2UGAR order (${order._id}) is confirmed. Total: $${order.totalPrice}. Delivery: ${order.deliveryDate}.`,
+  });
 };
 
 export const sendOrderNotification = async (adminEmail, order) => {
-  const plainText = `
-New Order Received
+  const html = wrap(`
+    <h2 style="margin: 0 0 20px; color: #2c2520; font-size: 20px;">New order received</h2>
+    <div style="background: #faf8f5; border: 1px solid #e5e0d8; border-radius: 10px; padding: 20px; margin: 0 0 20px;">
+      <p style="margin: 0 0 8px; color: #2c2520; font-size: 13px;"><strong>Customer:</strong> ${order.customerName}</p>
+      <p style="margin: 0 0 8px; color: #2c2520; font-size: 13px;"><strong>Email:</strong> ${order.customerEmail}</p>
+      <p style="margin: 0 0 8px; color: #2c2520; font-size: 13px;"><strong>Phone:</strong> ${order.customerPhone}</p>
+      <p style="margin: 0 0 8px; color: #2c2520; font-size: 13px;"><strong>Total:</strong> $${order.totalPrice}</p>
+      <p style="margin: 0 0 8px; color: #2c2520; font-size: 13px;"><strong>Delivery Date:</strong> ${order.deliveryDate}</p>
+      <p style="margin: 0; color: #2c2520; font-size: 13px;"><strong>Special Requests:</strong> ${order.specialRequests || 'None'}</p>
+    </div>
+  `);
 
-Customer: ${order.customerName}
-Email: ${order.customerEmail}
-Phone: ${order.customerPhone}
-Total Price: $${order.totalPrice}
-Delivery Date: ${order.deliveryDate}
-Special Requests: ${order.specialRequests || 'None'}
-  `.trim();
-
-  const msg = {
-    from: FROM_EMAIL,
+  await send({
     to: adminEmail,
-    subject: 'New Order Received - Baking Shop',
-    text: plainText,
-    html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2 style="color: #333;">New Order Received!</h2>
-        <div style="background: #f9f9f9; padding: 15px; border-left: 4px solid #ff9800; margin: 20px 0;">
-          <p><strong>Customer:</strong> ${order.customerName}</p>
-          <p><strong>Email:</strong> ${order.customerEmail}</p>
-          <p><strong>Phone:</strong> ${order.customerPhone}</p>
-          <p><strong>Total Price:</strong> $${order.totalPrice}</p>
-          <p><strong>Delivery Date:</strong> ${order.deliveryDate}</p>
-          <p><strong>Special Requests:</strong> ${order.specialRequests || 'None'}</p>
-        </div>
-      </div>
-    `,
-  };
-
-  try {
-    const info = await transporter.sendMail(msg);
-    console.log('Order notification email sent to admin:', adminEmail);
-    console.log('Message ID:', info.messageId);
-  } catch (error) {
-    console.error('Error sending admin notification email:', error.message);
-    throw error;
-  }
-};
-
-export const sendOTPEmail = async (email, otp, userName = 'User') => {
-  const plainText = `
-Password Reset Request
-
-Hi ${userName},
-
-We received a request to reset your password. Use the OTP below:
-
-Your OTP Code: ${otp}
-
-This OTP expires in 10 minutes.
-
-If you didn't request this, ignore this email.
-
-© Baking Shop Team
-  `.trim();
-
-  const msg = {
-    from: FROM_EMAIL,
-    to: email,
-    subject: 'Password Reset OTP - Baking Shop',
-    text: plainText,
-    html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2 style="color: #333; border-bottom: 2px solid #ff9800; padding-bottom: 10px;">
-          Password Reset Request
-        </h2>
-        <p>Hi ${userName},</p>
-        <p>We received a request to reset your password. Use the OTP below:</p>
-        <div style="background: #f0f0f0; padding: 20px; text-align: center; margin: 20px 0; border-radius: 5px;">
-          <p style="font-size: 14px; color: #666; margin-bottom: 10px;">Your OTP Code</p>
-          <p style="font-size: 32px; font-weight: bold; color: #ff9800; letter-spacing: 3px; margin: 0;">
-            ${otp}
-          </p>
-        </div>
-        <p style="color: #666; font-size: 14px;">This OTP expires in <strong>10 minutes</strong>.</p>
-        <p style="color: #999; font-size: 12px;">If you didn't request this, ignore this email.</p>
-        <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
-        <p style="color: #999; font-size: 12px; text-align: center;">© Baking Shop Team</p>
-      </div>
-    `,
-  };
-
-  try {
-    const info = await transporter.sendMail(msg);
-    console.log('OTP email sent successfully to:', email);
-    console.log('Message ID:', info.messageId);
-  } catch (error) {
-    console.error('Error sending OTP email:', error.message);
-    throw error;
-  }
+    subject: 'New S2UGAR order',
+    html,
+    text: `New order from ${order.customerName} (${order.customerEmail}). Total: $${order.totalPrice}. Delivery: ${order.deliveryDate}.`,
+  });
 };
