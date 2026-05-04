@@ -6,9 +6,7 @@ import cartService from '../services/cartService';
 import authService from '../services/authService';
 import { useCurrency } from '../context/CurrencyContext';
 
-const SQUARE_SCRIPT_URL = process.env.REACT_APP_SQUARE_ENVIRONMENT === 'production'
-  ? 'https://web.squarecdn.com/v1/square.js'
-  : 'https://sandbox.web.squarecdn.com/v1/square.js';
+const STRIPE_SCRIPT_URL = 'https://js.stripe.com/v3/';
 
 const BagIcon = () => (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
@@ -30,8 +28,9 @@ const getMinDate = () => {
 const CheckoutPage = () => {
   const navigate = useNavigate();
   const { formatPrice } = useCurrency();
-  const squareCardRef = useRef(null);
-  const squareInitRef = useRef(false);
+  const stripeRef = useRef(null);
+  const stripeCardRef = useRef(null);
+  const stripeInitRef = useRef(false);
 
   const [cartItems] = useState(() => cartService.getCart());
   const [prices, setPrices] = useState({});
@@ -39,9 +38,9 @@ const CheckoutPage = () => {
   const [userName, setUserName] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('cash_on_delivery');
   const [deliveryOption, setDeliveryOption] = useState('delivery');
-  const [squareMounted, setSquareMounted] = useState(false);
-  const [squareReady, setSquareReady] = useState(false);
-  const [squareError, setSquareError] = useState('');
+  const [stripeMounted, setStripeMounted] = useState(false);
+  const [stripeReady, setStripeReady] = useState(false);
+  const [stripeError, setStripeError] = useState('');
   const [loading, setLoading] = useState(false);
   const [submitError, setSubmitError] = useState('');
   const [voucherCode, setVoucherCode] = useState('');
@@ -96,52 +95,65 @@ const CheckoutPage = () => {
       .catch(() => {});
   }, []);
 
-  // Mount Square card container the first time Card is selected
+  // Mount Stripe card container the first time Card is selected
   useEffect(() => {
-    if (paymentMethod === 'square') setSquareMounted(true);
+    if (paymentMethod === 'stripe') setStripeMounted(true);
   }, [paymentMethod]);
 
-  // Initialise Square card form once the container div is in the DOM
+  // Initialise Stripe card form once the container div is in the DOM
   useEffect(() => {
-    if (!squareMounted || squareInitRef.current) return;
+    if (!stripeMounted || stripeInitRef.current) return;
 
-    const initCard = async () => {
-      if (!window.Square) return;
-      const appId = process.env.REACT_APP_SQUARE_APP_ID;
-      const locationId = process.env.REACT_APP_SQUARE_LOCATION_ID;
-      if (!appId || !locationId) {
-        setSquareError('Square is not configured (missing REACT_APP_SQUARE_APP_ID or REACT_APP_SQUARE_LOCATION_ID in client .env).');
+    const initCard = () => {
+      const publishableKey = process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY;
+      if (!publishableKey) {
+        setStripeError('Stripe is not configured (missing REACT_APP_STRIPE_PUBLISHABLE_KEY in client .env).');
         return;
       }
       try {
-        const payments = window.Square.payments(appId, locationId);
-        const card = await payments.card();
-        await card.attach('#square-card-container');
-        squareCardRef.current = card;
-        squareInitRef.current = true;
-        setSquareReady(true);
+        const stripe = window.Stripe(publishableKey);
+        stripeRef.current = stripe;
+        const elements = stripe.elements();
+        const card = elements.create('card', {
+          style: {
+            base: {
+              color: '#2c2520',
+              fontFamily: 'Georgia, "Times New Roman", serif',
+              fontSize: '16px',
+              '::placeholder': { color: '#b8a898' },
+            },
+            invalid: { color: '#c0392b' },
+          },
+        });
+        card.mount('#stripe-card-container');
+        card.on('ready', () => setStripeReady(true));
+        card.on('change', e => {
+          setStripeError(e.error ? e.error.message : '');
+        });
+        stripeCardRef.current = card;
+        stripeInitRef.current = true;
       } catch (err) {
-        console.error('[Square] Card init error:', err);
-        setSquareError(err?.message || 'Failed to load card form. Please use cash on delivery.');
+        console.error('[Stripe] Card init error:', err);
+        setStripeError(err?.message || 'Failed to load card form. Please use cash on delivery.');
       }
     };
 
-    if (window.Square) { initCard(); return; }
+    if (window.Stripe) { initCard(); return; }
 
-    const existing = document.getElementById('sq-sdk');
+    const existing = document.getElementById('stripe-sdk');
     if (existing) {
       existing.addEventListener('load', initCard);
       return () => existing.removeEventListener('load', initCard);
     }
 
     const script = document.createElement('script');
-    script.id = 'sq-sdk';
-    script.src = SQUARE_SCRIPT_URL;
+    script.id = 'stripe-sdk';
+    script.src = STRIPE_SCRIPT_URL;
     script.addEventListener('load', initCard);
     script.addEventListener('error', () =>
-      setSquareError('Failed to load Square SDK. Please use cash on delivery.'));
+      setStripeError('Failed to load Stripe SDK. Please use cash on delivery.'));
     document.head.appendChild(script);
-  }, [squareMounted]);
+  }, [stripeMounted]);
 
   // Derived totals (prices from server, not localStorage)
   const subtotal = cartItems.reduce(
@@ -173,18 +185,21 @@ const CheckoutPage = () => {
       return;
     }
 
-    let squareSourceId = null;
-    if (paymentMethod === 'square') {
-      if (!squareReady || !squareCardRef.current) {
+    let stripePaymentMethodId = null;
+    if (paymentMethod === 'stripe') {
+      if (!stripeReady || !stripeCardRef.current || !stripeRef.current) {
         setSubmitError('Card form is not ready. Please wait or choose cash on delivery.');
         return;
       }
-      const tokenResult = await squareCardRef.current.tokenize();
-      if (tokenResult.status !== 'OK') {
-        setSubmitError(tokenResult.errors?.[0]?.message || 'Card tokenization failed.');
+      const { paymentMethod: pm, error } = await stripeRef.current.createPaymentMethod({
+        type: 'card',
+        card: stripeCardRef.current,
+      });
+      if (error) {
+        setSubmitError(error.message || 'Card tokenization failed.');
         return;
       }
-      squareSourceId = tokenResult.token;
+      stripePaymentMethodId = pm.id;
     }
 
     const fullAddress = deliveryOption === 'delivery'
@@ -200,7 +215,7 @@ const CheckoutPage = () => {
       guestEmail: form.email,
       guestPhone: form.phone,
       paymentMethod,
-      ...(squareSourceId && { squareSourceId }),
+      ...(stripePaymentMethodId && { stripePaymentMethodId }),
     };
 
     setLoading(true);
@@ -396,15 +411,15 @@ const CheckoutPage = () => {
             <h2 className="co-section-title">Payment</h2>
 
             <div className="co-payment-options">
-              <label className={`co-payment-opt${paymentMethod === 'square' ? ' active' : ''}`}>
+              <label className={`co-payment-opt${paymentMethod === 'stripe' ? ' active' : ''}`}>
                 <input
-                  type="radio" name="pm" value="square"
-                  checked={paymentMethod === 'square'}
-                  onChange={() => setPaymentMethod('square')}
+                  type="radio" name="pm" value="stripe"
+                  checked={paymentMethod === 'stripe'}
+                  onChange={() => setPaymentMethod('stripe')}
                 />
                 <div className="co-pm-label">
                   <span className="co-pm-name">Card</span>
-                  <span className="co-pm-sub">Visa, Mastercard via Square</span>
+                  <span className="co-pm-sub">Visa, Mastercard via Stripe</span>
                 </div>
               </label>
 
@@ -421,14 +436,14 @@ const CheckoutPage = () => {
               </label>
             </div>
 
-            {/* Square card form — always kept in DOM once mounted to prevent re-init */}
-            {squareMounted && (
-              <div className={`co-square-wrap${paymentMethod !== 'square' ? ' co-sq-hidden' : ''}`}>
-                <div id="square-card-container" />
-                {!squareReady && !squareError && (
+            {/* Stripe card form — always kept in DOM once mounted to prevent re-init */}
+            {stripeMounted && (
+              <div className={`co-square-wrap${paymentMethod !== 'stripe' ? ' co-sq-hidden' : ''}`}>
+                <div id="stripe-card-container" />
+                {!stripeReady && !stripeError && (
                   <p className="co-sq-loading">Loading secure card form…</p>
                 )}
-                {squareError && <p className="co-sq-error">{squareError}</p>}
+                {stripeError && <p className="co-sq-error">{stripeError}</p>}
               </div>
             )}
 
@@ -508,7 +523,7 @@ const CheckoutPage = () => {
               <span>Total</span>
               <span>{formatPrice(total)}</span>
             </div>
-            {paymentMethod === 'square' && (
+            {paymentMethod === 'stripe' && (
               <p className="co-currency-note">All charges in NZD.</p>
             )}
           </div>

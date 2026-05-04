@@ -22,7 +22,7 @@ const OrderSuccessPage = () => {
         weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
       })
     : null;
-  const isCard = paymentMethod === 'square';
+  const isCard = paymentMethod === 'stripe';
   const guestEmail = order.guestEmail || '';
 
   return (

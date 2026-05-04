@@ -8,7 +8,7 @@ const paymentSchema = new mongoose.Schema({
   },
   method: {
     type: String,
-    enum: ['square', 'cash_on_delivery'],
+    enum: ['stripe', 'cash_on_delivery'],
     required: true,
   },
   status: {
@@ -24,11 +24,11 @@ const paymentSchema = new mongoose.Schema({
     type: String,
     default: 'NZD',
   },
-  squarePaymentId: {
+  stripePaymentIntentId: {
     type: String,
     default: null,
   },
-  squareReceiptUrl: {
+  stripeReceiptUrl: {
     type: String,
     default: null,
   },

@@ -1,10 +1,14 @@
 import { Resend } from 'resend';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+let _resend = null;
+const getResend = () => {
+  if (!_resend) _resend = new Resend(process.env.RESEND_API_KEY);
+  return _resend;
+};
 const FROM = 'S2UGAR <noreply@s2ugar.com>';
 
 const baseStyle = `
-  font-family: Georgia, 'Times New Roman', serif;
+  font-family: Arial, Helvetica, sans-serif;
   max-width: 560px;
   margin: 0 auto;
   background: #ffffff;
@@ -37,7 +41,7 @@ const wrap = (body) => `
 `;
 
 const send = async ({ to, subject, html, text }) => {
-  const { error } = await resend.emails.send({ from: FROM, to, subject, html, text });
+  const { error } = await getResend().emails.send({ from: FROM, to, subject, html, text });
   if (error) {
     console.error('[Resend] Failed to send email to', to, error);
     throw new Error(error.message);
@@ -96,28 +100,53 @@ export const sendOTPEmail = async (email, otp, userName = 'there') => {
   });
 };
 
-export const sendOrderConfirmation = async (order) => {
+export const sendOrderConfirmation = async ({ customerName, customerEmail, orderId, totalPrice, deliveryDate, items = [] }) => {
+  const shortId = String(orderId).slice(-8).toUpperCase();
+  const greeting = customerName ? `Hi ${customerName},` : 'Hi there,';
+
+  const itemsHtml = items.length > 0 ? `
+    <table style="width: 100%; border-collapse: collapse; margin: 16px 0 4px;">
+      ${items.map(item => `
+        <tr>
+          <td style="padding: 7px 0; border-bottom: 1px solid #e5e0d8; color: #2c2520; font-size: 13px;">
+            ${item.name}${item.quantity > 1 ? ` × ${item.quantity}` : ''}
+          </td>
+          <td style="padding: 7px 0; border-bottom: 1px solid #e5e0d8; color: #2c2520; font-size: 13px; text-align: right;">
+            $${(item.price * item.quantity).toFixed(2)}
+          </td>
+        </tr>
+      `).join('')}
+      <tr>
+        <td style="padding: 12px 0 0; color: #2c2520; font-size: 14px; font-weight: 700;">Total</td>
+        <td style="padding: 12px 0 0; color: #2c2520; font-size: 14px; font-weight: 700; text-align: right;">$${Number(totalPrice).toFixed(2)} NZD</td>
+      </tr>
+    </table>
+  ` : `<p style="margin: 8px 0; color: #2c2520; font-size: 13px;"><strong>Total:</strong> $${Number(totalPrice).toFixed(2)} NZD</p>`;
+
   const html = wrap(`
-    <p style="margin: 0 0 6px; color: #6b6460; font-size: 14px;">Hi ${order.customerName || 'there'},</p>
+    <p style="margin: 0 0 6px; color: #6b6460; font-size: 14px;">${greeting}</p>
     <h2 style="margin: 0 0 20px; color: #2c2520; font-size: 20px;">Your order is confirmed!</h2>
     <p style="color: #6b6460; font-size: 14px; line-height: 1.6;">
-      Thank you for ordering from S2UGAR. We've received your order and will be in touch shortly.
+      Thank you for ordering from S2UGAR. We've received your order and are getting started on it.
     </p>
     <div style="background: #faf8f5; border: 1px solid #e5e0d8; border-radius: 10px; padding: 20px; margin: 24px 0;">
-      <p style="margin: 0 0 8px; color: #2c2520; font-size: 13px;"><strong>Order ID:</strong> ${order._id}</p>
-      <p style="margin: 0 0 8px; color: #2c2520; font-size: 13px;"><strong>Total:</strong> $${order.totalPrice}</p>
-      <p style="margin: 0; color: #2c2520; font-size: 13px;"><strong>Delivery Date:</strong> ${order.deliveryDate}</p>
+      <p style="margin: 0 0 4px; color: #9c9088; font-size: 11px; letter-spacing: 1px; text-transform: uppercase;">Order Reference</p>
+      <p style="margin: 0 0 16px; color: #2c2520; font-size: 20px; font-weight: 700; font-family: 'Courier New', Courier, monospace;">#${shortId}</p>
+      ${itemsHtml}
+      <p style="margin: 16px 0 0; color: #6b6460; font-size: 13px;">
+        <strong style="color: #2c2520;">Delivery / Pickup date:</strong> ${deliveryDate}
+      </p>
     </div>
     <p style="color: #9c9088; font-size: 12px; line-height: 1.6;">
-      Questions? Contact us at s2ugar.com.
+      We'll be in touch to confirm the details. Questions? Contact us at s2ugar.com.
     </p>
   `);
 
   await send({
-    to: order.customerEmail,
-    subject: 'Order confirmed — S2UGAR',
+    to: customerEmail,
+    subject: `Order confirmed #${shortId} — S2UGAR`,
     html,
-    text: `Hi ${order.customerName}, your S2UGAR order (${order._id}) is confirmed. Total: $${order.totalPrice}. Delivery: ${order.deliveryDate}.`,
+    text: `${greeting} Your S2UGAR order #${shortId} is confirmed. Total: $${Number(totalPrice).toFixed(2)} NZD. Delivery: ${deliveryDate}.`,
   });
 };
 

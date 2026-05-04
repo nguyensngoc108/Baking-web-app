@@ -41,7 +41,7 @@ const orderSchema = new mongoose.Schema({
   },
   paymentMethod: {
     type: String,
-    enum: ['square', 'cash_on_delivery'],
+    enum: ['stripe', 'cash_on_delivery'],
     required: true,
   },
   paymentStatus: {
