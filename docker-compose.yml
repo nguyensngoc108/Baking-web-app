@@ -48,6 +48,7 @@ services:
       dockerfile: Dockerfile
       args:
         REACT_APP_SERVER_URL: http://baking-shop-server:5000
+        REACT_APP_STRIPE_PUBLISHABLE_KEY: ${REACT_APP_STRIPE_PUBLISHABLE_KEY}
     container_name: baking-shop-client
     ports:
       - "3000:3000"

@@ -23,6 +23,23 @@ const userSchema = new mongoose.Schema({
   address: {
     type: String,
   },
+  isVerified: {
+    type: Boolean,
+    default: false,
+  },
+  verificationOTP: {
+    type: String,
+    default: null,
+  },
+  verificationOTPExpires: {
+    type: Date,
+    default: null,
+  },
+  verificationExpiresAt: {
+    type: Date,
+    default: null,
+    index: { expireAfterSeconds: 0 }, // MongoDB auto-deletes unverified docs at this time
+  },
   resetOTP: {
     type: String,
     default: null,
@@ -35,11 +52,33 @@ const userSchema = new mongoose.Schema({
     type: Number,
     default: 0,
   },
+  resetOTPLockedUntil: {
+    type: Date,
+    default: null,
+  },
+  resetOTPRequestedAt: {
+    type: Date,
+    default: null,
+  },
+  passwordResetToken: {
+    type: String,
+    default: null,
+  },
+  passwordResetTokenExpires: {
+    type: Date,
+    default: null,
+  },
   phone: {
     type: String,
   },
   details: {
-    type: String,
+    allergies: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'CakeIngredient'
+    }],
+    notes:{
+      type: String,
+    }
   },
   createdAt: {
     type: Date,

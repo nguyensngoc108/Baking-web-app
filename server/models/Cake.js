@@ -15,18 +15,18 @@ const cakeSchema = new mongoose.Schema({
   },
   image: {
     type: String,
-    required: true,
+  },
+  cloudinary_id: {
+    type: String,
   },
   category: {
     type: String,
-    enum: ['Chocolate', 'Vanilla', 'Fruit', 'Special'],
-    required: true,
+    default: '',
   },
   available: {
     type: Boolean,
     default: true,
   },
-  ingredients: [String],
   servings: Number,
   isSignature: {
     type: Boolean,
@@ -35,6 +35,10 @@ const cakeSchema = new mongoose.Schema({
   createdAt: {
     type: Date,
     default: Date.now,
+  },
+  deleted: {
+    type: Boolean,
+    default: false,
   },
 });
 

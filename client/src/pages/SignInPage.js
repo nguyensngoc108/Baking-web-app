@@ -11,6 +11,11 @@ const SignInPage = () => {
   const [message, setMessage] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+  const [loginType, setLoginType] = useState('user'); // 'user' or 'admin'
+
+  const handleAdminLoginClick = () => {
+    navigate('/dashboard-login');
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -24,8 +29,10 @@ const SignInPage = () => {
       setLoading(true);
       setMessage('');
 
-      // Call the login API
-      const response = await authService.userLogin(email, password);
+      // Call the appropriate login API
+      const response = loginType === 'admin' 
+        ? await authService.adminLogin(email, password)
+        : await authService.userLogin(email, password);
       
       // Save token
       authService.saveToken(response.data.token);
@@ -42,7 +49,12 @@ const SignInPage = () => {
         navigate('/');
       }, 1500);
     } catch (error) {
-      setMessage(error.response?.data?.message || 'Login failed. Please check your credentials.');
+      const data = error.response?.data;
+      if (data?.pendingVerification) {
+        navigate('/register', { state: { step: 'otp', email: data.email } });
+        return;
+      }
+      setMessage(data?.message || 'Login failed. Please check your credentials.');
       console.error('Login error:', error);
     } finally {
       setLoading(false);
@@ -65,8 +77,8 @@ const SignInPage = () => {
       <div className="signin-container">
         <div className="signin-form-wrapper">
           <div className="signin-header">
-            <h1>Welcome Back</h1>
-            <p>Sign in to your account</p>
+            <h1>{loginType === 'admin' ? 'Admin Login' : 'Welcome Back'}</h1>
+            <p>{loginType === 'admin' ? 'Sign in to admin panel' : 'Sign in to your account'}</p>
           </div>
 
           <form onSubmit={handleSubmit} className="signin-form">
@@ -116,7 +128,7 @@ const SignInPage = () => {
                 />
                 <label htmlFor="rememberMe">Remember me</label>
               </div>
-              <a href="#forgot" className="forgot-password-link">Forgot password?</a>
+              <button type="button" className="forgot-password-link" onClick={() => navigate('/forgot-password')}>Forgot password?</button>
             </div>
 
             {/* Messages */}
@@ -138,6 +150,7 @@ const SignInPage = () => {
             {/* Sign Up Link */}
             <div className="signin-footer">
               <p>Don't have an account? <a href="/register" className="signup-link">Create one</a></p>
+              <p style={{ marginTop: '10px' }}>Admin? <button type="button" onClick={handleAdminLoginClick} className="admin-link-btn">Login here</button></p>
             </div>
           </form>
 

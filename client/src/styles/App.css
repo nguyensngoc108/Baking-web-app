@@ -1,82 +1,8 @@
-.home-page {
-  padding: 0;
-  width: 100%;
-  margin: 0;
-}
 
-.home-page h1 {
-  text-align: center;
-  margin-bottom: 10px;
-  font-size: 2.5rem;
-  color: #8b4513;
-}
 
-.home-page > p {
-  text-align: center;
-  margin-bottom: 40px;
-  font-size: 1.1rem;
-  color: #666;
-}
 
-.cakes-container {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-  gap: 20px;
-  margin-top: 30px;
-}
 
-.cake-card {
-  background: white;
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  transition: transform 0.3s;
-}
 
-.cake-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-.cake-card img {
-  width: 100%;
-  height: 200px;
-  object-fit: cover;
-}
-
-.cake-card h2 {
-  padding: 15px 15px 5px;
-  font-size: 1.3rem;
-  color: #8b4513;
-}
-
-.cake-card p {
-  padding: 0 15px;
-  font-size: 0.9rem;
-  color: #666;
-}
-
-.cake-card .price {
-  padding: 10px 15px;
-  font-size: 1.2rem;
-  font-weight: bold;
-  color: #d9534f;
-}
-
-.cake-card button {
-  width: 100%;
-  padding: 10px;
-  background-color: #8b4513;
-  color: white;
-  border: none;
-  cursor: pointer;
-  font-size: 1rem;
-  transition: background-color 0.3s;
-}
-
-.cake-card button:hover {
-  background-color: #6b3410;
-}
 
 /* Order Page */
 .order-page {

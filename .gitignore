@@ -43,3 +43,6 @@ Thumbs.db
 # Misc
 .cache
 .tmp
+
+# ignore claude.md
+CLAUDE.md
